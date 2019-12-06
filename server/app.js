@@ -1,18 +1,22 @@
+const fs = require("fs");
 const net = require("net");
 const http = require("http");
 const spawn = require("child_process").spawn;
+const uuidv1 = require("uuid/v1");
 const express = require("express");
 const app = express();
 
-app.use(express.static("frontend/dist"));
+app.use(express.static(process.cwd() + "/frontend/dist"));
 
 const httpServer = http.createServer(app);
-
 const io = require("socket.io")(httpServer);
+
+const BBS_ADDR = "goblins.iptime.org";
+const BBS_PORT = 9000;
 
 io.on("connection", function(ioSocket) {
   // Remain data to be parsed
-  const remain = [];
+  var remain = [];
 
   // Create client TCP socket
   const netSocket = new net.Socket();
@@ -20,8 +24,8 @@ io.on("connection", function(ioSocket) {
   // True if the binary transmit mode
   netSocket.binaryTransmit = false;
 
-  // Connect to the BBS server (localhost:9000)
-  netSocket.connect(9000, "localhost", () => {
+  // Connect to the BBS server (BBS_ADDR:BBS_PORT)
+  netSocket.connect(BBS_PORT, BBS_ADDR, () => {
     // prettier-ignore
     const initPacket =
         [
@@ -68,7 +72,8 @@ io.on("connection", function(ioSocket) {
         }
       }
 
-      rz.stdin.write(Buffer.from(payload));
+      // At this line, netSocket.rz must be exist
+      netSocket.rz.stdin.write(Buffer.from(payload));
     } else {
       ioSocket.emit("data", data);
 
@@ -76,38 +81,77 @@ io.on("connection", function(ioSocket) {
       const pattern = /B00000000000000/;
       const result = pattern.exec(data.toString());
       if (result) {
-        console.log("rz session found");
+        // Create temporary for file download using uuid
+        netSocket.rzTargetDir = uuidv1();
+        fs.mkdirSync(
+          process.cwd() + "/frontend/dist/file-cache/" + netSocket.rzTargetDir,
+          {
+            recursive: true
+          }
+        );
+
+        console.log(`targetDir: ${netSocket.rzTargetDir}`);
 
         netSocket.binaryTransmit = true;
 
-        const rz = spawn("rz", ["-e", "-E", "-vv"]);
+        netSocket.rz = spawn("rz", ["-e", "-E", "-vv"], {
+          cwd:
+            process.cwd() + "/frontend/dist/file-cache/" + netSocket.rzTargetDir
+        });
 
-        rz.stdout.on("data", data => {
+        netSocket.rz.stdout.on("data", data => {
           netSocket.write(data);
         });
 
-        rz.stderr.on("data", data => {
-          const pattern = /Bytes received: ([0-9]*)\/([0-9]*).*BPS:([0-9]*) ETA ([0-9:]*)/;
-          const result = pattern.exec(data.toString());
-          if (result) {
-            const received = parseInt(result[1], 10);
-            const total = parseInt(result[2], 10);
-            const bps = parseInt(result[3], 10);
-            const eta = result[4];
+        netSocket.rz.stderr.on("data", data => {
+          {
+            const pattern = /Receiving: (.*)/;
+            const result = pattern.exec(data.toString());
+            if (result) {
+              netSocket.rzFileName = result[1];
+              ioSocket.emit("rz-begin", netSocket.rzFileName);
+            }
+          }
+          {
+            const pattern = /Bytes received: ([0-9]*)\/([0-9]*).*BPS:([0-9]*) ETA ([0-9:]*)/;
+            const result = pattern.exec(data.toString());
+            if (result) {
+              const received = parseInt(result[1], 10);
+              const total = parseInt(result[2], 10);
+              const bps = parseInt(result[3], 10);
+              const eta = result[4];
 
-            console.log(`[${received}/${total}] BPS[${bps}] ETA[${eta}]`);
+              ioSocket.emit("rz-progress", {
+                received,
+                total,
+                bps,
+                eta
+              });
+            }
           }
         });
 
-        rz.on("close", code => {
+        netSocket.rz.on("close", code => {
           netSocket.binaryTransmit = false;
+          ioSocket.emit("rz-end", {
+            code,
+            url:
+              "http://" +
+              BBS_ADDR +
+              ":" +
+              BBS_PORT +
+              "/file-cache/" +
+              netSocket.rzTargetDir +
+              "/" +
+              netSocket.rzFileName
+          });
         });
       }
     }
   });
 
-  ioSocket.on("write", text => {
-    netSocket.write(Buffer.from(text));
+  ioSocket.on("data", data => {
+    netSocket.write(Buffer.from(data));
   });
 });
 
