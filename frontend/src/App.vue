@@ -70,6 +70,8 @@ const FONT_HEIGHT = 16;
 const SCREEN_WIDTH = 80;
 const SCREEN_HEIGHT = 33;
 
+var WINDOW_HEIGHT = SCREEN_HEIGHT;
+
 const COLOR = [
   '#000000', // Black
   '#000080', // Blue
@@ -312,10 +314,10 @@ export default {
 
     lf() {
       this.cursor.y++;
-      if (this.cursor.y > SCREEN_HEIGHT - 1) {
-        this.cursor.y = SCREEN_HEIGHT - 1;
+      if (this.cursor.y > WINDOW_HEIGHT - 1) {
+        this.cursor.y = WINDOW_HEIGHT - 1;
 
-        this.screenScrollUp();
+        this.screenScrollUp(WINDOW_HEIGHT);
       }
     },
 
@@ -329,6 +331,7 @@ export default {
       }
       const lastChar = this.escape.charAt(this.escape.length - 1);
       if ('@ABCDFGHJKSfhlmprsu'.indexOf(lastChar) != -1) {
+        console.log("ESC:", this.escape);
         return true;
       } else {
         return false;
@@ -380,6 +383,7 @@ export default {
           if (result) {
             const param1 = parseInt(result[1], 10);
             const param2 = parseInt(result[2], 10);
+
             this.cursor.y = isNaN(param1) ? 0 : param1 - 1;
             this.cursor.x = isNaN(param2) ? 0 : param2 - 1;
           } else {
@@ -463,7 +467,7 @@ export default {
           );
         }
       }
-      // Scroll the screen
+      // Set the window area
       {
         const pattern = /\[([0-9]*);([0-9]*)r/;
         const result = pattern.exec(this.escape);
@@ -473,36 +477,28 @@ export default {
           const scrollFrom = isNaN(param1) ? 0 : param1 - 1;
           const scrollTo = isNaN(param2) ? 0 : param2 - 1;
 
-          const copy = this.ctx2d.getImageData(
-            0,
-            scrollFrom * FONT_HEIGHT + FONT_HEIGHT,
-            this.$refs.terminal.width,
-            (scrollTo - scrollFrom) * FONT_HEIGHT + FONT_HEIGHT,
-          );
-          this.ctx2d.putImageData(copy, 0, scrollFrom * FONT_HEIGHT);
-          this.ctx2d.fillStyle = this.attr.backgroundColor;
-          this.ctx2d.fillRect(
-            0,
-            scrollTo * FONT_HEIGHT,
-            this.$refs.terminal.width,
-            FONT_HEIGHT,
-          );
+          // Reset the window height
+          if (scrollFrom <= 0 && scrollTo <= 0) {
+            WINDOW_HEIGHT = SCREEN_HEIGHT;
+          } else {
+            WINDOW_HEIGHT = scrollTo + 1;
+          }
         }
       }
     },
 
-    screenScrollUp() {
+    screenScrollUp(height) {
       const copy = this.ctx2d.getImageData(
         0,
         FONT_HEIGHT,
         this.$refs.terminal.clientWidth,
-        this.$refs.terminal.clientHeight - FONT_HEIGHT,
+        (height * FONT_HEIGHT) - FONT_HEIGHT,
       );
       this.ctx2d.putImageData(copy, 0, 0);
       this.ctx2d.fillStyle = '#000080';
       this.ctx2d.fillRect(
         0,
-        this.$refs.terminal.clientHeight - FONT_HEIGHT,
+        (height * FONT_HEIGHT) - FONT_HEIGHT,
         this.$refs.terminal.clientWidth,
         FONT_HEIGHT,
       );
