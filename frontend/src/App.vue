@@ -35,14 +35,12 @@
             <div ref="rzDiagText" class="margin-16"></div>
             <div ref="rzProgress" class="margin-16"></div>
             <div>
-              <v-progress-circular
-                v-if="rzReceived < rzTotal"
-                :size="48"
-                :width="7"
-                color="purple"
-                indeterminate
-                style="margin: 32px"
-              ></v-progress-circular>
+              <v-progress-linear
+                color="light-green darken-4"
+                height="16"
+                :value="((rzReceived / rzTotal) * 100).toFixed(0)"
+                striped
+              ></v-progress-linear>
             </div>
           </v-card-text>
           <v-card-actions v-if="rzReceived == rzTotal">
@@ -162,7 +160,8 @@ export default {
           this.rzReceived = 0;
           this.rzTotal = 1;
           this.$nextTick(() => {
-            this.$refs.rzDiagText.innerText = '파일을 준비중입니다';
+            this.$refs.rzDiagText.innerText =
+              '파일을 준비중입니다\n\n' + this.rzFilename;
           });
         });
 
@@ -180,7 +179,8 @@ export default {
             this.rzReceived = this.rzTotal;
 
             this.$nextTick(() => {
-              this.$refs.rzDiagText.innerText = '파일이 준비되었습니다';
+              this.$refs.rzDiagText.innerText =
+                '파일이 준비되었습니다\n\n' + this.rzFilename;
               this.$refs.rzProgress.innerText = '(100% / 100%)';
               this.rzUrl = result.url;
             });
@@ -491,13 +491,13 @@ export default {
         0,
         FONT_HEIGHT,
         this.$refs.terminal.clientWidth,
-        (height * FONT_HEIGHT) - FONT_HEIGHT,
+        height * FONT_HEIGHT - FONT_HEIGHT,
       );
       this.ctx2d.putImageData(copy, 0, 0);
       this.ctx2d.fillStyle = '#000080';
       this.ctx2d.fillRect(
         0,
-        (height * FONT_HEIGHT) - FONT_HEIGHT,
+        height * FONT_HEIGHT - FONT_HEIGHT,
         this.$refs.terminal.clientWidth,
         FONT_HEIGHT,
       );
