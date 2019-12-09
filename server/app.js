@@ -1,20 +1,23 @@
-const fs = require("fs");
-const net = require("net");
-const http = require("http");
-const spawn = require("child_process").spawn;
-const uuidv1 = require("uuid/v1");
-const express = require("express");
+const net = require('net');
+const mkdir = require('mkdirp-sync');
+const http = require('http');
+const spawn = require('child_process').spawn;
+const uuidv1 = require('uuid/v1');
+const iconv = require('iconv-lite');
+const express = require('express');
 const app = express();
 
-app.use(express.static(process.cwd() + "/frontend/dist"));
+app.use(express.static(process.cwd() + '/frontend/dist'));
 
 const httpServer = http.createServer(app);
-const io = require("socket.io")(httpServer);
+const io = require('socket.io')(httpServer);
 
-const BBS_ADDR = "goblins.iptime.org";
+const BBS_ADDR = 'goblins.iptime.org';
 const BBS_PORT = 9000;
+const WEB_ADDR = 'goblins.iptime.org';
+const WEB_PORT = 8080;
 
-io.on("connection", function(ioSocket) {
+io.on('connection', function(ioSocket) {
   // Remain data to be parsed
   var remain = [];
 
@@ -23,6 +26,12 @@ io.on("connection", function(ioSocket) {
 
   // True if the binary transmit mode
   netSocket.binaryTransmit = false;
+
+  // Generate the decode stream
+  netSocket.decodeStream = iconv.decodeStream('euc-kr');
+  netSocket.decodeStream.on('data', data => {
+    ioSocket.emit('data', Buffer.from(data));
+  });
 
   // Connect to the BBS server (BBS_ADDR:BBS_PORT)
   netSocket.connect(BBS_PORT, BBS_ADDR, () => {
@@ -40,12 +49,12 @@ io.on("connection", function(ioSocket) {
   });
 
   // Deliver the bbs server close event to the ioSocket
-  netSocket.on("close", () => {
+  netSocket.on('close', () => {
     ioSocket.disconnect(true);
   });
 
   // Data from the telnet server. Deliver it to the web client.
-  netSocket.on("data", data => {
+  netSocket.on('data', data => {
     if (netSocket.binaryTransmit) {
       const payload = [];
 
@@ -75,7 +84,7 @@ io.on("connection", function(ioSocket) {
       // At this line, netSocket.rz must be exist
       netSocket.rz.stdin.write(Buffer.from(payload));
     } else {
-      ioSocket.emit("data", data);
+      netSocket.decodeStream.write(data);
 
       // Check rz session start
       const pattern = /B00000000000000/;
@@ -83,33 +92,30 @@ io.on("connection", function(ioSocket) {
       if (result) {
         // Create temporary for file download using uuid
         netSocket.rzTargetDir = uuidv1();
-        fs.mkdirSync(
-          process.cwd() + "/frontend/dist/file-cache/" + netSocket.rzTargetDir,
-          {
-            recursive: true
-          }
+        mkdir(
+          process.cwd() + '/frontend/dist/file-cache/' + netSocket.rzTargetDir,
         );
-
-        console.log(`targetDir: ${netSocket.rzTargetDir}`);
 
         netSocket.binaryTransmit = true;
 
-        netSocket.rz = spawn("rz", ["-e", "-E", "-vv"], {
+        netSocket.rz = spawn('rz', ['-e', '-E', '-vv'], {
           cwd:
-            process.cwd() + "/frontend/dist/file-cache/" + netSocket.rzTargetDir
+            process.cwd() +
+            '/frontend/dist/file-cache/' +
+            netSocket.rzTargetDir,
         });
 
-        netSocket.rz.stdout.on("data", data => {
+        netSocket.rz.stdout.on('data', data => {
           netSocket.write(data);
         });
 
-        netSocket.rz.stderr.on("data", data => {
+        netSocket.rz.stderr.on('data', data => {
           {
             const pattern = /Receiving: (.*)/;
             const result = pattern.exec(data.toString());
             if (result) {
               netSocket.rzFileName = result[1];
-              ioSocket.emit("rz-begin", netSocket.rzFileName);
+              ioSocket.emit('rz-begin', netSocket.rzFileName);
             }
           }
           {
@@ -121,38 +127,38 @@ io.on("connection", function(ioSocket) {
               const bps = parseInt(result[3], 10);
               const eta = result[4];
 
-              ioSocket.emit("rz-progress", {
+              ioSocket.emit('rz-progress', {
                 received,
                 total,
                 bps,
-                eta
+                eta,
               });
             }
           }
         });
 
-        netSocket.rz.on("close", code => {
+        netSocket.rz.on('close', code => {
           netSocket.binaryTransmit = false;
-          ioSocket.emit("rz-end", {
+          ioSocket.emit('rz-end', {
             code,
             url:
-              "http://" +
-              BBS_ADDR +
-              ":" +
-              BBS_PORT +
-              "/file-cache/" +
+              'http://' +
+              WEB_ADDR +
+              ':' +
+              WEB_PORT +
+              '/file-cache/' +
               netSocket.rzTargetDir +
-              "/" +
-              netSocket.rzFileName
+              '/' +
+              netSocket.rzFileName,
           });
         });
       }
     }
   });
 
-  ioSocket.on("data", data => {
+  ioSocket.on('data', data => {
     netSocket.write(Buffer.from(data));
   });
 });
 
-httpServer.listen(8080);
+httpServer.listen(8080, '0.0.0.0');
