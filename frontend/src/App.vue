@@ -209,7 +209,11 @@ export default {
     },
 
     enterCommand() {
-      this.io.emit('data', this.command + '\r\n');
+      if (this.command) {
+        this.io.emit('data', this.command + '\r\n');
+      } else {
+        this.io.emit('data', '\r\n');
+      }
       this.command = null;
     },
 
@@ -226,23 +230,24 @@ export default {
             this.escape = null;
           }
         } else {
-          switch (ch) {
-            case '\x1b':
+          switch (ch.charCodeAt(0)) {
+            case 27:
               this.escape = '\x1b';
               break;
 
-            case '\x0d':
+            case 13:
               this.cr();
               break;
 
-            case '\x0a':
+            case 10:
               this.lf();
               break;
 
-            case '\x00':
-            case '\x18':
-            case '\x11':
-            case '\x8a':
+            case 0: // NULL
+            case 24: // ZDLE
+            case 17: // XON
+            case 138: // LF of sz
+            case 65533: // Unknown
               break;
 
             default:
@@ -315,7 +320,7 @@ export default {
     },
 
     doubleWidth(ch) {
-      return ch.charCodeAt(0) >= 0x80 && this.ctx2d.measureText(ch).width <= 8;
+      return ch.charCodeAt(0) >= 0x80 && this.ctx2d.measureText(ch).width <= 9;
     },
 
     endOfEscape() {
@@ -421,7 +426,8 @@ export default {
       // Clear the screen
       {
         if (this.escape == '\x1b[2J') {
-          this.ctx2d.clearRect(
+          this.ctx2d.fillStyle = COLOR[this.attr.backgroundColor];
+          this.ctx2d.fillRect(
             0,
             0,
             this.$refs.terminal.width,
@@ -432,24 +438,27 @@ export default {
       // Clear a line
       {
         if (this.escape.endsWith('[2K')) {
-          this.ctx2d.clearRect(
+          this.ctx2d.fillStyle = COLOR[this.attr.backgroundColor];
+          this.ctx2d.fillRect(
             0,
             this.cursor.y * FONT_HEIGHT,
-            this.$refs.terminal.width,
+            this.$refs.terminal.clientWidth,
             FONT_HEIGHT,
           );
         } else if (this.escape.endsWith('[1K')) {
-          this.ctx2d.clearRect(
+          this.ctx2d.fillStyle = COLOR[this.attr.backgroundColor];
+          this.ctx2d.fillRect(
             0,
             this.cursor.y * FONT_HEIGHT,
-            (this.cursor.x + 1) * 8,
+            (this.cursor.x + 1) * FONT_WIDTH,
             FONT_HEIGHT,
           );
         } else if (this.escape.endsWith('[0K') || this.escape.endsWith('[K')) {
-          this.ctx2d.clearRect(
+          this.ctx2d.fillStyle = COLOR[this.attr.backgroundColor];
+          this.ctx2d.fillRect(
             this.cursor.x * FONT_WIDTH,
             this.cursor.y * FONT_HEIGHT,
-            this.$refs.terminal.width - this.cursor.x * FONT_WIDTH,
+            this.$refs.terminal.clientWidth - this.cursor.x * FONT_WIDTH,
             FONT_HEIGHT,
           );
         }

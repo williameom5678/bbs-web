@@ -156,7 +156,7 @@ io.on('connection', function(ioSocket) {
   });
 
   ioSocket.on('data', data => {
-    netSocket.write(Buffer.from(data));
+    netSocket.write(iconv.encode(Buffer.from(data), 'euc-kr'));
   });
 });
 
