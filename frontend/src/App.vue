@@ -240,7 +240,7 @@ export default {
               break;
 
             case '\x00':
-            case '\x2a':
+            case '\x18':
             case '\x11':
             case '\x8a':
               break;
