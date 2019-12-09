@@ -119,19 +119,18 @@ io.on('connection', function(ioSocket) {
             }
           }
           {
-            const pattern = /Bytes received: ([0-9]*)\/([0-9]*).*BPS:([0-9]*) ETA ([0-9:]*)/;
+            const pattern = /Bytes received: ([0-9]*)\/([0-9]*).*BPS:([0-9]*)/;
             const result = pattern.exec(data.toString());
+
             if (result) {
               const received = parseInt(result[1], 10);
               const total = parseInt(result[2], 10);
               const bps = parseInt(result[3], 10);
-              const eta = result[4];
 
               ioSocket.emit('rz-progress', {
                 received,
                 total,
                 bps,
-                eta,
               });
             }
           }

@@ -5,23 +5,20 @@
         id="terminal"
         ref="terminal"
         width="640"
-        height="512"
+        height="528"
         @click="terminalClicked()"
       ></canvas>
       <input
         id="command"
         ref="command"
         v-model="command"
+        :type="commandType"
         @keyup.enter="enterCommand()"
       />
-      <v-dialog v-model="connDiag" width="256">
+      <v-dialog v-model="connDiag" persistent width="256">
         <v-card>
-          <v-card-title class="headline grey lighten-2" primary-title
-            >도스박물관BBS</v-card-title
-          >
-
           <v-card-text class="text-center">
-            <p>접속 중입니다..</p>
+            <p class="margin-16">접속 중입니다..</p>
             <v-progress-circular
               :size="48"
               :width="7"
@@ -30,6 +27,35 @@
               style="margin: 32px"
             ></v-progress-circular>
           </v-card-text>
+        </v-card>
+      </v-dialog>
+      <v-dialog v-model="rzDiag" persistent width="256">
+        <v-card>
+          <v-card-text class="text-center">
+            <div ref="rzDiagText" class="margin-16"></div>
+            <div ref="rzProgress" class="margin-16"></div>
+            <div>
+              <v-progress-circular
+                v-if="rzReceived < rzTotal"
+                :size="48"
+                :width="7"
+                color="purple"
+                indeterminate
+                style="margin: 32px"
+              ></v-progress-circular>
+            </div>
+          </v-card-text>
+          <v-card-actions v-if="rzReceived == rzTotal">
+            <v-spacer></v-spacer>
+            <v-btn
+              :href="rzUrl"
+              :download="rzFilename"
+              color="green darken-1"
+              text
+              >다운로드</v-btn
+            >
+            <v-btn color="green darken-1" text @click="rzClose()">닫기</v-btn>
+          </v-card-actions>
         </v-card>
       </v-dialog>
     </div>
@@ -72,6 +98,7 @@ export default {
     connDiag: true,
     connected: false,
     command: null,
+    commandType: 'text',
     escape: null,
     cursor: {
       x: 0,
@@ -86,6 +113,11 @@ export default {
       backgroundColor: 1,
       reversed: false,
     },
+    rzDiag: false,
+    rzFilename: null,
+    rzReceived: 0,
+    rzTotal: 1,
+    rzUrl: null,
   }),
 
   mounted() {
@@ -107,28 +139,62 @@ export default {
 
         this.io.on('disconnect', () => {
           this.connected = false;
+          this.write('접속이 종료되었습니다.\r\n');
         });
 
         this.io.on('data', data => {
+          // Check if the password input phrase
+          const pattern = /비밀번호 : /;
+          const result = pattern.exec(Buffer.from(data).toString());
+          if (result) {
+            this.commandType = 'password';
+          } else {
+            this.commandType = 'text';
+          }
           this.write(Buffer.from(data).toString());
         });
 
         this.io.on('rz-begin', filename => {
-          console.log(`rz-begin, filename: ${filename}`);
+          this.rzFilename = filename;
+          this.rzDiag = true;
+          this.rzReceived = 0;
+          this.rzTotal = 1;
+          this.$nextTick(() => {
+            this.$refs.rzDiagText.innerText = '파일을 준비중입니다';
+          });
         });
 
         this.io.on('rz-progress', progress => {
-          console.log(
-            `rz-progress, ${progress.received}/${progress.total} BPS: ${progress.bps} ETA: ${progress.eta}`,
-          );
+          // Progress: { received, total, bps }
+          this.rzReceived = progress.received;
+          this.rzTotal = progress.total;
+
+          const percent = ((this.rzReceived / this.rzTotal) * 100).toFixed(2);
+          this.$refs.rzProgress.innerText = '(' + percent + '% / 100%)';
         });
 
         this.io.on('rz-end', result => {
-          console.log(
-            `rz-end with the code ${result.code}, url: ${result.url}`,
-          );
+          if (result.code == 0) {
+            this.rzReceived = this.rzTotal;
+
+            this.$nextTick(() => {
+              this.$refs.rzDiagText.innerText = '파일이 준비되었습니다';
+              this.$refs.rzProgress.innerText = '(100% / 100%)';
+              this.rzUrl = result.url;
+            });
+          } else {
+            alert('error: download failure!');
+          }
         });
       }, 4000);
+    },
+
+    rzClose() {
+      this.rzDiag = false;
+      this.$nextTick(() => {
+        this.write('파일수신이 완료되었습니다. [ENTER]를 눌러주세요.');
+        this.terminalClicked();
+      });
     },
 
     setupTerminal() {
@@ -138,7 +204,7 @@ export default {
         this.ctx2d.font = 'normal 16px neodgm';
         this.ctx2d.textBaseline = 'top';
       } else {
-        alert('Cannot create a canvas context2d!');
+        alert('error: cannot create a canvas context2d!');
       }
     },
 
@@ -420,15 +486,15 @@ export default {
       const copy = this.ctx2d.getImageData(
         0,
         FONT_HEIGHT,
-        this.$refs.terminal.width,
-        this.$refs.terminal.height - FONT_HEIGHT,
+        this.$refs.terminal.clientWidth,
+        this.$refs.terminal.clientHeight - FONT_HEIGHT,
       );
       this.ctx2d.putImageData(copy, 0, 0);
       this.ctx2d.fillStyle = '#000080';
       this.ctx2d.fillRect(
         0,
-        this.$refs.terminal.height - FONT_HEIGHT,
-        this.$refs.terminal.width,
+        this.$refs.terminal.clientHeight - FONT_HEIGHT,
+        this.$refs.terminal.clientWidth,
         FONT_HEIGHT,
       );
     },
@@ -454,12 +520,18 @@ export default {
 }
 
 #command {
-  font-size: 16px;
+  font-size: 16px !important;
+  height: 16px !important;
+  line-height: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  outline: none !important;
   position: absolute;
-  margin: 0;
-  padding: 0;
-  border: 0;
   color: #ffffff;
-  outline: none;
+}
+
+.margin-16 {
+  padding-top: 16px !important;
 }
 </style>
