@@ -331,7 +331,6 @@ export default {
       }
       const lastChar = this.escape.charAt(this.escape.length - 1);
       if ('@ABCDFGHJKSfhlmprsu'.indexOf(lastChar) != -1) {
-        console.log("ESC:", this.escape);
         return true;
       } else {
         return false;
