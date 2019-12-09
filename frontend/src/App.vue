@@ -1,8 +1,39 @@
 <template>
-  <div>
-    <canvas id="terminal" ref="terminal" width="640" height="512"></canvas>
-    <input v-model="command" @keyup.enter="enterCommand()" />
-  </div>
+  <v-app>
+    <div>
+      <canvas
+        id="terminal"
+        ref="terminal"
+        width="640"
+        height="512"
+        @click="terminalClicked()"
+      ></canvas>
+      <input
+        id="command"
+        ref="command"
+        v-model="command"
+        @keyup.enter="enterCommand()"
+      />
+      <v-dialog v-model="connDiag" width="256">
+        <v-card>
+          <v-card-title class="headline grey lighten-2" primary-title
+            >도스박물관BBS</v-card-title
+          >
+
+          <v-card-text class="text-center">
+            <p>접속 중입니다..</p>
+            <v-progress-circular
+              :size="48"
+              :width="7"
+              color="purple"
+              indeterminate
+              style="margin: 32px"
+            ></v-progress-circular>
+          </v-card-text>
+        </v-card>
+      </v-dialog>
+    </div>
+  </v-app>
 </template>
 
 <script>
@@ -38,6 +69,7 @@ export default {
   data: () => ({
     io: null,
     ctx2d: null,
+    connDiag: true,
     connected: false,
     command: null,
     escape: null,
@@ -65,33 +97,38 @@ export default {
 
   methods: {
     setupNetwork() {
-      this.io = io('http://goblins.iptime.org:8080');
+      setTimeout(() => {
+        this.io = io('http://goblins.iptime.org:8080');
 
-      this.io.on('connect', () => {
-        this.connected = true;
-      });
+        this.io.on('connect', () => {
+          this.connected = true;
+          this.connDiag = false;
+        });
 
-      this.io.on('disconnect', () => {
-        this.connected = false;
-      });
+        this.io.on('disconnect', () => {
+          this.connected = false;
+        });
 
-      this.io.on('data', data => {
-        this.write(Buffer.from(data).toString());
-      });
+        this.io.on('data', data => {
+          this.write(Buffer.from(data).toString());
+        });
 
-      this.io.on('rz-begin', filename => {
-        console.log(`rz-begin, filename: ${filename}`);
-      });
+        this.io.on('rz-begin', filename => {
+          console.log(`rz-begin, filename: ${filename}`);
+        });
 
-      this.io.on('rz-progess', progress => {
-        console.log(
-          `rz-progress, ${progress.received}/${progress.total} BPS: ${progress.bps} ETA: ${progress.eta}`,
-        );
-      });
+        this.io.on('rz-progress', progress => {
+          console.log(
+            `rz-progress, ${progress.received}/${progress.total} BPS: ${progress.bps} ETA: ${progress.eta}`,
+          );
+        });
 
-      this.io.on('rz-end', result => {
-        console.log(`rz-end with the code ${result.code}, url: ${result.url}`);
-      });
+        this.io.on('rz-end', result => {
+          console.log(
+            `rz-end with the code ${result.code}, url: ${result.url}`,
+          );
+        });
+      }, 4000);
     },
 
     setupTerminal() {
@@ -108,6 +145,10 @@ export default {
     enterCommand() {
       this.io.emit('data', this.command + '\r\n');
       this.command = null;
+    },
+
+    terminalClicked() {
+      this.$refs.command.focus();
     },
 
     write(text) {
@@ -130,6 +171,12 @@ export default {
 
             case '\x0a':
               this.lf();
+              break;
+
+            case '\x00':
+            case '\x2a':
+            case '\x11':
+            case '\x8a':
               break;
 
             default:
@@ -173,6 +220,19 @@ export default {
           }
         }
       }
+
+      // Move the command textfield to the cursor position
+      this.$refs.command.style.left =
+        (this.cursor.x * FONT_WIDTH).toString() + 'px';
+      this.$refs.command.style.top =
+        (this.cursor.y * FONT_HEIGHT).toString() + 'px';
+
+      // Calculate the command textfield width (cursor ~ end of the screen)
+      this.$refs.command.style.width =
+        (
+          this.$refs.terminal.clientWidth -
+          this.cursor.x * FONT_WIDTH
+        ).toString() + 'px';
     },
 
     cr() {
@@ -205,6 +265,7 @@ export default {
     },
 
     applyEscape() {
+      // Text color
       {
         const pattern = /\[=([0-9]*)F/;
         const result = pattern.exec(this.escape);
@@ -213,7 +274,7 @@ export default {
           this.attr.textColor = isNaN(param1) ? 15 : param1;
         }
       }
-
+      // Background color
       {
         const pattern = /\[=([0-9]*)G/;
         const result = pattern.exec(this.escape);
@@ -222,7 +283,7 @@ export default {
           this.attr.backgroundColor = isNaN(param1) ? 1 : param1;
         }
       }
-
+      // Reverse color
       {
         const pattern = /\[([0-9]*)m/;
         const result = pattern.exec(this.escape);
@@ -239,8 +300,9 @@ export default {
           }
         }
       }
-
+      // Cursor position set
       {
+        // Move cursor to specific position
         {
           const pattern = /\[([0-9]*);([0-9]*)H/;
           const result = pattern.exec(this.escape);
@@ -259,7 +321,7 @@ export default {
             }
           }
         }
-
+        // Move cursor y
         {
           const pattern = /\[([0-9]*)A/;
           const result = pattern.exec(this.escape);
@@ -272,7 +334,7 @@ export default {
             }
           }
         }
-
+        // Move cursor x
         {
           const pattern = /\[([0-9]*)C/;
           const result = pattern.exec(this.escape);
@@ -281,7 +343,7 @@ export default {
             this.cursor.x = isNaN(param1) ? 0 : param1 - 1;
           }
         }
-
+        // Store and restore the cursor position
         {
           if (this.escape == '[s') {
             this.cursorStore = {x: this.cursor.x, y: this.cursor.y};
@@ -290,7 +352,7 @@ export default {
           }
         }
       }
-
+      // Clear the screen
       {
         if (this.escape == '\x1b[2J') {
           this.ctx2d.clearRect(
@@ -301,7 +363,7 @@ export default {
           );
         }
       }
-
+      // Clear a line
       {
         if (this.escape.endsWith('[2K')) {
           this.ctx2d.clearRect(
@@ -326,7 +388,7 @@ export default {
           );
         }
       }
-
+      // Scroll the screen
       {
         const pattern = /\[([0-9]*);([0-9]*)r/;
         const result = pattern.exec(this.escape);
@@ -380,19 +442,24 @@ export default {
   src: url('assets/neodgm.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
-  font-display: block;
 }
 
-html,
-body {
+#app {
   background: #000000;
+  font-family: 'neodgm' !important;
 }
 
 #terminal {
   background: #000080;
 }
 
-.hiru {
-  font-family: 'neodgm';
+#command {
+  font-size: 16px;
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: #ffffff;
+  outline: none;
 }
 </style>
