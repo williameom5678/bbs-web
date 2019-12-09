@@ -511,7 +511,7 @@ export default {
 }
 
 #app {
-  background: #000000;
+  background: #000080;
   font-family: 'neodgm' !important;
 }
 
