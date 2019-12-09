@@ -380,6 +380,7 @@ export default {
   src: url('assets/neodgm.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
+  font-display: block;
 }
 
 html,
