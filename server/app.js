@@ -110,9 +110,10 @@ io.on('connection', function(ioSocket) {
         });
 
         netSocket.rz.stderr.on('data', data => {
+          const decodedString = iconv.decode(Buffer.from(data), 'euc-kr');
           {
             const pattern = /Receiving: (.*)/;
-            const result = pattern.exec(data.toString());
+            const result = pattern.exec(decodedString);
             if (result) {
               netSocket.rzFileName = result[1];
               ioSocket.emit('rz-begin', netSocket.rzFileName);
@@ -120,7 +121,7 @@ io.on('connection', function(ioSocket) {
           }
           {
             const pattern = /Bytes received: ([0-9]*)\/([0-9]*).*BPS:([0-9]*)/;
-            const result = pattern.exec(data.toString());
+            const result = pattern.exec(decodedString);
 
             if (result) {
               const received = parseInt(result[1], 10);
