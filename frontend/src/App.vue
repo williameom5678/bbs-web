@@ -544,12 +544,12 @@ export default {
     moveCommandInputPosition() {
       this.$refs.command.style.left =
         (
-          this.$refs.terminal.getBoundingClientRect().left +
+          this.$refs.terminal.getBoundingClientRect().left + window.scrollX +
           this.cursor.x * FONT_WIDTH
         ).toString() + 'px';
       this.$refs.command.style.top =
         (
-          this.$refs.terminal.getBoundingClientRect().top +
+          this.$refs.terminal.getBoundingClientRect().top + window.scrollY +
           this.cursor.y * FONT_HEIGHT
         ).toString() + 'px';
 
