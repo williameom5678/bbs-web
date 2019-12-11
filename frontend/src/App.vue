@@ -125,6 +125,7 @@ export default {
     this.$nextTick(() => {
       this.setupTerminal();
       this.setupNetwork();
+      this.terminalClicked();
     });
   },
 
