@@ -68,7 +68,8 @@ const FONT_HEIGHT = 16;
 const SCREEN_WIDTH = 80;
 const SCREEN_HEIGHT = 33;
 
-var WINDOW_HEIGHT = SCREEN_HEIGHT;
+var WINDOW_TOP = 0;
+var WINDOW_BOTTOM = SCREEN_HEIGHT - 1;
 
 const COLOR = [
   '#000000', // Black
@@ -314,10 +315,10 @@ export default {
 
     lf() {
       this.cursor.y++;
-      if (this.cursor.y > WINDOW_HEIGHT - 1) {
-        this.cursor.y = WINDOW_HEIGHT - 1;
+      if (this.cursor.y > WINDOW_BOTTOM) {
+        this.cursor.y = WINDOW_BOTTOM;
 
-        this.screenScrollUp(WINDOW_HEIGHT);
+        this.screenScrollUp();
       }
     },
 
@@ -478,26 +479,28 @@ export default {
 
           // Reset the window height
           if (scrollFrom <= 0 && scrollTo <= 0) {
-            WINDOW_HEIGHT = SCREEN_HEIGHT;
+            WINDOW_TOP = 0;
+            WINDOW_BOTTOM = SCREEN_HEIGHT - 1;
           } else {
-            WINDOW_HEIGHT = scrollTo + 1;
+            WINDOW_TOP = scrollFrom;
+            WINDOW_BOTTOM = scrollTo;
           }
         }
       }
     },
 
-    screenScrollUp(height) {
+    screenScrollUp() {
       const copy = this.ctx2d.getImageData(
         0,
-        FONT_HEIGHT,
+        FONT_HEIGHT * (WINDOW_TOP + 1),
         this.$refs.terminal.clientWidth,
-        height * FONT_HEIGHT - FONT_HEIGHT,
+        FONT_HEIGHT * (WINDOW_BOTTOM - WINDOW_TOP),
       );
-      this.ctx2d.putImageData(copy, 0, 0);
+      this.ctx2d.putImageData(copy, 0, FONT_HEIGHT * WINDOW_TOP);
       this.ctx2d.fillStyle = '#000080';
       this.ctx2d.fillRect(
         0,
-        height * FONT_HEIGHT - FONT_HEIGHT,
+        WINDOW_BOTTOM * FONT_HEIGHT,
         this.$refs.terminal.clientWidth,
         FONT_HEIGHT,
       );
