@@ -125,7 +125,6 @@ export default {
     this.$nextTick(() => {
       this.setupTerminal();
       this.setupNetwork();
-      this.terminalClicked();
     });
   },
 
@@ -137,6 +136,7 @@ export default {
         this.io.on('connect', () => {
           this.connected = true;
           this.connDiag = false;
+          this.terminalClicked();
         });
 
         this.io.on('disconnect', () => {
