@@ -143,6 +143,12 @@ io.on('connection', function(ioSocket) {
 
           // When close, KSC5601 file name is broken on the UTF-8 System.
           // Should decode the file name to UTF-8
+          execSync('mv * ' + netSocket.rzTargetDir, {
+            cwd:
+              process.cwd() +
+              '/frontend/dist/file-cache/' +
+              netSocket.rzTargetDir,
+          });
           execSync('mv * "' + netSocket.rzFileName + '"', {
             cwd:
               process.cwd() +
