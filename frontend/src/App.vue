@@ -3,7 +3,12 @@
     <v-content>
       <v-toolbar dark dense>
         <v-toolbar-title class="subtitle-1 text-uppercase">
-          <img src="apple-icon.png" style="vertical-align: middle; margin-right: 8px" width="24px" height="24px">
+          <img
+            src="apple-icon.png"
+            style="vertical-align: middle; margin-right: 8px"
+            width="24px"
+            height="24px"
+          />
           <span style="color: yellow">도</span>
           <span style="color: white">/</span>
           <span style="color: red">스</span>
@@ -239,7 +244,7 @@ export default {
     setupTerminal() {
       this.ctx2d = this.$refs.terminal.getContext('2d');
       if (this.ctx2d) {
-        this.ctx2d.fillStyle = '#ffffff';
+        this.ctx2d.fillStyle = COLOR[this.attr.textColor];
         this.ctx2d.font = 'normal 16px neodgm';
         this.ctx2d.textBaseline = 'top';
       } else {
@@ -465,7 +470,8 @@ export default {
           );
 
           // Clear whole webpage
-          document.getElementById('app').style.backgroundColor = COLOR[this.attr.backgroundColor];
+          document.getElementById('app').style.backgroundColor =
+            COLOR[this.attr.backgroundColor];
         }
       }
       // Clear a line
@@ -537,9 +543,15 @@ export default {
 
     moveCommandInputPosition() {
       this.$refs.command.style.left =
-        (this.$refs.terminal.getBoundingClientRect().left + (this.cursor.x * FONT_WIDTH)).toString() + 'px';
+        (
+          this.$refs.terminal.getBoundingClientRect().left +
+          this.cursor.x * FONT_WIDTH
+        ).toString() + 'px';
       this.$refs.command.style.top =
-        (this.$refs.terminal.getBoundingClientRect().top + (this.cursor.y * FONT_HEIGHT)).toString() + 'px';
+        (
+          this.$refs.terminal.getBoundingClientRect().top +
+          this.cursor.y * FONT_HEIGHT
+        ).toString() + 'px';
 
       // Calculate the command textfield width (cursor ~ end of the screen)
       this.$refs.command.style.width =
@@ -551,7 +563,7 @@ export default {
 
     onResize() {
       this.moveCommandInputPosition();
-    }
+    },
   },
 };
 </script>
