@@ -1,62 +1,86 @@
 <template>
   <v-app>
-    <div>
-      <canvas
-        id="terminal"
-        ref="terminal"
-        width="640"
-        height="528"
-        @click="terminalClicked()"
-      ></canvas>
-      <input
-        id="command"
-        ref="command"
-        v-model="command"
-        :type="commandType"
-        @keyup.enter="enterCommand()"
-      />
-      <v-dialog v-model="connDiag" persistent width="256">
-        <v-card>
-          <v-card-text class="text-center">
-            <p class="margin-16">접속 중입니다..</p>
-            <v-progress-circular
-              :size="48"
-              :width="7"
-              color="purple"
-              indeterminate
-              style="margin: 32px"
-            ></v-progress-circular>
-          </v-card-text>
-        </v-card>
-      </v-dialog>
-      <v-dialog v-model="rzDiag" persistent width="256">
-        <v-card>
-          <v-card-text class="text-center">
-            <div ref="rzDiagText" class="margin-16"></div>
-            <div ref="rzProgress" class="margin-16"></div>
-            <div>
-              <v-progress-linear
-                color="light-green darken-4"
-                height="16"
-                :value="((rzReceived / rzTotal) * 100).toFixed(0)"
-                striped
-              ></v-progress-linear>
-            </div>
-          </v-card-text>
-          <v-card-actions v-if="rzReceived == rzTotal">
-            <v-spacer></v-spacer>
-            <v-btn
-              :href="rzUrl"
-              :download="rzFilename"
-              color="green darken-1"
-              text
-              >다운로드</v-btn
-            >
-            <v-btn color="green darken-1" text @click="rzClose()">닫기</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-    </div>
+    <v-content>
+      <v-toolbar dark dense>
+        <v-toolbar-title class="subtitle-1 text-uppercase">
+          <img src="apple-icon.png" style="vertical-align: middle; margin-right: 8px" width="24px" height="24px">
+          <span style="color: yellow">도</span>
+          <span style="color: white">/</span>
+          <span style="color: red">스</span>
+          <span style="color: white">/</span>
+          <span style="color: cyan">박</span>
+          <span style="color: white">/</span>
+          <span style="color: lightgreen">물</span>
+          <span style="color: white">/</span>
+          <span style="color: yellow">관</span>
+          <span style="color: white">/</span>
+          <span style="color: white">BBS</span>
+        </v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-toolbar-items>
+          <v-btn text href="https://cafe.naver.com/olddos" target="_blank">
+            <span class="mr-2">도스박물관 카페</span>
+          </v-btn>
+        </v-toolbar-items>
+      </v-toolbar>
+      <div class="text-center">
+        <canvas
+          id="terminal"
+          ref="terminal"
+          width="640"
+          height="528"
+          @click="terminalClicked()"
+        ></canvas>
+        <input
+          id="command"
+          ref="command"
+          v-model="command"
+          :type="commandType"
+          @keyup.enter="enterCommand()"
+        />
+        <v-dialog v-model="connDiag" persistent width="256">
+          <v-card>
+            <v-card-text class="text-center">
+              <p class="margin-16">접속 중입니다..</p>
+              <v-progress-circular
+                :size="48"
+                :width="7"
+                color="purple"
+                indeterminate
+                style="margin: 32px"
+              ></v-progress-circular>
+            </v-card-text>
+          </v-card>
+        </v-dialog>
+        <v-dialog v-model="rzDiag" persistent width="256">
+          <v-card>
+            <v-card-text class="text-center">
+              <div ref="rzDiagText" class="margin-16"></div>
+              <div ref="rzProgress" class="margin-16"></div>
+              <div>
+                <v-progress-linear
+                  color="light-green darken-4"
+                  height="16"
+                  :value="((rzReceived / rzTotal) * 100).toFixed(0)"
+                  striped
+                ></v-progress-linear>
+              </div>
+            </v-card-text>
+            <v-card-actions v-if="rzReceived == rzTotal">
+              <v-spacer></v-spacer>
+              <v-btn
+                :href="rzUrl"
+                :download="rzFilename"
+                color="green darken-1"
+                text
+                >다운로드</v-btn
+              >
+              <v-btn color="green darken-1" text @click="rzClose()">닫기</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+      </div>
+    </v-content>
   </v-app>
 </template>
 
@@ -73,7 +97,7 @@ var WINDOW_BOTTOM = SCREEN_HEIGHT - 1;
 
 const COLOR = [
   '#000000', // Black
-  '#000080', // Blue
+  '#000040', // Blue
   '#008000', // Green
   '#008080', // Cyan
   '#800000', // Red
@@ -119,7 +143,18 @@ export default {
     rzReceived: 0,
     rzTotal: 1,
     rzUrl: null,
+
+    keepConn: false,
+    keepConnMsg: '.',
   }),
+
+  created() {
+    window.addEventListener('resize', this.onResize);
+  },
+
+  destroyed() {
+    window.removeEventListener('resize', this.onResize);
+  },
 
   mounted() {
     this.$nextTick(() => {
@@ -297,17 +332,7 @@ export default {
       }
 
       // Move the command textfield to the cursor position
-      this.$refs.command.style.left =
-        (this.cursor.x * FONT_WIDTH).toString() + 'px';
-      this.$refs.command.style.top =
-        (this.cursor.y * FONT_HEIGHT).toString() + 'px';
-
-      // Calculate the command textfield width (cursor ~ end of the screen)
-      this.$refs.command.style.width =
-        (
-          this.$refs.terminal.clientWidth -
-          this.cursor.x * FONT_WIDTH
-        ).toString() + 'px';
+      this.moveCommandInputPosition();
     },
 
     cr() {
@@ -438,6 +463,9 @@ export default {
             this.$refs.terminal.width,
             this.$refs.terminal.height,
           );
+
+          // Clear whole webpage
+          document.getElementById('app').style.backgroundColor = COLOR[this.attr.backgroundColor];
         }
       }
       // Clear a line
@@ -498,7 +526,7 @@ export default {
         FONT_HEIGHT * (WINDOW_BOTTOM - WINDOW_TOP),
       );
       this.ctx2d.putImageData(copy, 0, FONT_HEIGHT * WINDOW_TOP);
-      this.ctx2d.fillStyle = '#000080';
+      this.ctx2d.fillStyle = COLOR[this.attr.backgroundColor];
       this.ctx2d.fillRect(
         0,
         WINDOW_BOTTOM * FONT_HEIGHT,
@@ -506,6 +534,24 @@ export default {
         FONT_HEIGHT,
       );
     },
+
+    moveCommandInputPosition() {
+      this.$refs.command.style.left =
+        (this.$refs.terminal.getBoundingClientRect().left + (this.cursor.x * FONT_WIDTH)).toString() + 'px';
+      this.$refs.command.style.top =
+        (this.$refs.terminal.getBoundingClientRect().top + (this.cursor.y * FONT_HEIGHT)).toString() + 'px';
+
+      // Calculate the command textfield width (cursor ~ end of the screen)
+      this.$refs.command.style.width =
+        (
+          this.$refs.terminal.clientWidth -
+          this.cursor.x * FONT_WIDTH
+        ).toString() + 'px';
+    },
+
+    onResize() {
+      this.moveCommandInputPosition();
+    }
   },
 };
 </script>
@@ -519,12 +565,13 @@ export default {
 }
 
 #app {
-  background: #000080;
+  background: #000040;
   font-family: 'neodgm' !important;
 }
 
 #terminal {
-  background: #000080;
+  margin-top: 16px;
+  background: #000040;
 }
 
 #command {
