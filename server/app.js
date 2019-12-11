@@ -2,6 +2,7 @@ const net = require('net');
 const mkdir = require('mkdirp-sync');
 const http = require('http');
 const spawn = require('child_process').spawn;
+const execSync = require('child_process').execSync;
 const uuidv1 = require('uuid/v1');
 const iconv = require('iconv-lite');
 const express = require('express');
@@ -139,6 +140,16 @@ io.on('connection', function(ioSocket) {
 
         netSocket.rz.on('close', code => {
           netSocket.binaryTransmit = false;
+
+          // When close, KSC5601 file name is broken on the UTF-8 System.
+          // Should decode the file name to UTF-8
+          execSync('mv * "' + netSocket.rzFileName + '"', {
+            cwd:
+              process.cwd() +
+              '/frontend/dist/file-cache/' +
+              netSocket.rzTargetDir,
+          });
+
           ioSocket.emit('rz-end', {
             code,
             url:
