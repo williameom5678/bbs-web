@@ -19,23 +19,25 @@ const WEB_ADDR = 'goblins.iptime.org';
 const WEB_PORT = 8080;
 
 io.on('connection', function(ioSocket) {
+  console.error('Client connected:', ioSocket.client.conn.remoteAddress);
+
   // Remain data to be parsed
   var remain = [];
 
   // Create client TCP socket
-  const netSocket = new net.Socket();
+  ioSocket.netSocket = new net.Socket();
 
   // True if the binary transmit mode
-  netSocket.binaryTransmit = false;
+  ioSocket.netSocket.binaryTransmit = false;
 
   // Generate the decode stream
-  netSocket.decodeStream = iconv.decodeStream('euc-kr');
-  netSocket.decodeStream.on('data', data => {
+  ioSocket.netSocket.decodeStream = iconv.decodeStream('euc-kr');
+  ioSocket.netSocket.decodeStream.on('data', data => {
     ioSocket.emit('data', Buffer.from(data));
   });
 
   // Connect to the BBS server (BBS_ADDR:BBS_PORT)
-  netSocket.connect(BBS_PORT, BBS_ADDR, () => {
+  ioSocket.netSocket.connect(BBS_PORT, BBS_ADDR, () => {
     // prettier-ignore
     const initPacket =
         [
@@ -46,17 +48,18 @@ io.on('connection', function(ioSocket) {
         ];
 
     // When connected, send the init packet (pre-defined)
-    netSocket.write(Buffer.from(initPacket));
+    ioSocket.netSocket.write(Buffer.from(initPacket));
   });
 
   // Deliver the bbs server close event to the ioSocket
-  netSocket.on('close', () => {
+  ioSocket.netSocket.on('close', () => {
+    console.error('Telnet disconnected:', ioSocket.client.conn.remoteAddress);
     ioSocket.disconnect(true);
   });
 
   // Data from the telnet server. Deliver it to the web client.
-  netSocket.on('data', data => {
-    if (netSocket.binaryTransmit) {
+  ioSocket.netSocket.on('data', data => {
+    if (ioSocket.netSocket.binaryTransmit) {
       const payload = [];
 
       data = [...remain, ...data];
@@ -82,42 +85,44 @@ io.on('connection', function(ioSocket) {
         }
       }
 
-      // At this line, netSocket.rz must be exist
-      netSocket.rz.stdin.write(Buffer.from(payload));
+      // At this line, ioSocket.netSocket.rz must be exist
+      ioSocket.netSocket.rz.stdin.write(Buffer.from(payload));
     } else {
-      netSocket.decodeStream.write(data);
+      ioSocket.netSocket.decodeStream.write(data);
 
       // Check rz session start
       const pattern = /B00000000000000/;
       const result = pattern.exec(data.toString());
       if (result) {
         // Create temporary for file download using uuid
-        netSocket.rzTargetDir = uuidv1();
+        ioSocket.netSocket.rzTargetDir = uuidv1();
         mkdir(
-          process.cwd() + '/frontend/dist/file-cache/' + netSocket.rzTargetDir,
+          process.cwd() +
+            '/frontend/dist/file-cache/' +
+            ioSocket.netSocket.rzTargetDir,
         );
 
-        netSocket.binaryTransmit = true;
+        ioSocket.netSocket.binaryTransmit = true;
 
-        netSocket.rz = spawn('rz', ['-e', '-E', '-vv'], {
+        ioSocket.netSocket.rz = spawn('rz', ['-e', '-E', '-vv'], {
           cwd:
             process.cwd() +
             '/frontend/dist/file-cache/' +
-            netSocket.rzTargetDir,
+            ioSocket.netSocket.rzTargetDir,
         });
 
-        netSocket.rz.stdout.on('data', data => {
-          netSocket.write(data);
+        ioSocket.netSocket.rz.stdout.on('data', data => {
+          ioSocket.netSocket.write(data);
         });
 
-        netSocket.rz.stderr.on('data', data => {
+        ioSocket.netSocket.rz.stderr.on('data', data => {
           const decodedString = iconv.decode(Buffer.from(data), 'euc-kr');
           {
             const pattern = /Receiving: (.*)/;
             const result = pattern.exec(decodedString);
             if (result) {
-              netSocket.rzFileName = result[1];
-              ioSocket.emit('rz-begin', netSocket.rzFileName);
+              ioSocket.netSocket.rzFileName = result[1];
+              ioSocket.emit('rz-begin', ioSocket.netSocket.rzFileName);
             }
           }
           {
@@ -138,22 +143,22 @@ io.on('connection', function(ioSocket) {
           }
         });
 
-        netSocket.rz.on('close', code => {
-          netSocket.binaryTransmit = false;
+        ioSocket.netSocket.rz.on('close', code => {
+          ioSocket.netSocket.binaryTransmit = false;
 
           // When close, KSC5601 file name is broken on the UTF-8 System.
           // Should decode the file name to UTF-8
-          execSync('mv * ' + netSocket.rzTargetDir, {
+          execSync('mv * ' + ioSocket.netSocket.rzTargetDir, {
             cwd:
               process.cwd() +
               '/frontend/dist/file-cache/' +
-              netSocket.rzTargetDir,
+              ioSocket.netSocket.rzTargetDir,
           });
-          execSync('mv * "' + netSocket.rzFileName + '"', {
+          execSync('mv * "' + ioSocket.netSocket.rzFileName + '"', {
             cwd:
               process.cwd() +
               '/frontend/dist/file-cache/' +
-              netSocket.rzTargetDir,
+              ioSocket.netSocket.rzTargetDir,
           });
 
           ioSocket.emit('rz-end', {
@@ -164,9 +169,9 @@ io.on('connection', function(ioSocket) {
               ':' +
               WEB_PORT +
               '/file-cache/' +
-              netSocket.rzTargetDir +
+              ioSocket.netSocket.rzTargetDir +
               '/' +
-              netSocket.rzFileName,
+              ioSocket.netSocket.rzFileName,
           });
         });
       }
@@ -174,7 +179,16 @@ io.on('connection', function(ioSocket) {
   });
 
   ioSocket.on('data', data => {
-    netSocket.write(iconv.encode(Buffer.from(data), 'euc-kr'));
+    ioSocket.netSocket.write(iconv.encode(Buffer.from(data), 'euc-kr'));
+  });
+
+  ioSocket.on('error', error => {
+    console.error('Client error:', error);
+  });
+
+  ioSocket.on('disconnect', () => {
+    console.error('Client disconnected:', ioSocket.client.conn.remoteAddress);
+    ioSocket.netSocket.destroy();
   });
 });
 
