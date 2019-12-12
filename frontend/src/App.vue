@@ -25,7 +25,7 @@
         <v-toolbar-items>
           <v-select
             :items="displays"
-            v-model="displaySelected"
+            v-model="selectedDisplay"
             @change="displayChanged()"
             label="디스플레이"
             solo
@@ -158,7 +158,7 @@ export default {
     command: null,
     commandType: 'text',
     displays: ['VGA', 'HERCULES'],
-    displaySelected: 'VGA',
+    selectedDisplay: 'VGA',
     escape: null,
     cursor: {
       x: 0,
@@ -280,7 +280,7 @@ export default {
       // If there is cookie, set the color by cookie
       const cookieColor = this.getCookie('display');
       if (cookieColor) {
-        this.displaySelected = cookieColor;
+        this.selectedDisplay = cookieColor;
       }
       this.displayChanged();
 
@@ -310,7 +310,7 @@ export default {
     displayChanged() {
       var targetPreset = COLOR_PRESET_VGA;
 
-      if (this.displaySelected == 'HERCULES') {
+      if (this.selectedDisplay == 'HERCULES') {
         targetPreset = COLOR_PRESET_HERCULES;
       }
 
@@ -326,7 +326,7 @@ export default {
         COLOR[this.attr.backgroundColor];
 
       this.terminalClicked();
-      this.setCookie('display', this.displaySelected, 365);
+      this.setCookie('display', this.selectedDisplay, 365);
     },
 
     write(text) {
