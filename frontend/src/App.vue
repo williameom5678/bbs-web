@@ -23,6 +23,13 @@
         </v-toolbar-title>
         <v-spacer></v-spacer>
         <v-toolbar-items>
+          <v-select
+            :items="displays"
+            v-model="displaySelected"
+            @change="displayChanged()"
+            label="디스플레이"
+            solo
+          ></v-select>
           <v-btn text href="https://cafe.naver.com/olddos" target="_blank">
             <span class="mr-2">도스박물관 카페</span>
           </v-btn>
@@ -100,9 +107,9 @@ const SCREEN_HEIGHT = 33;
 var WINDOW_TOP = 0;
 var WINDOW_BOTTOM = SCREEN_HEIGHT - 1;
 
-const COLOR = [
+const COLOR_PRESET_VGA = [
   '#000000', // Black
-  '#000040', // Blue
+  '#000080', // Blue
   '#008000', // Green
   '#008080', // Cyan
   '#800000', // Red
@@ -116,8 +123,29 @@ const COLOR = [
   '#ff4040', // Light red
   '#ff40ff', // Light magenta
   '#ffff40', // Yellow
-  '#ffffff', // White
+  '#ffffff' // White
 ];
+
+const COLOR_PRESET_HERCULES = [
+  '#000000',
+  '#000000',
+  '#808080',
+  '#808080',
+  '#808080',
+  '#808080',
+  '#808080',
+  '#a0a0a0',
+  '#a0a0a0',
+  '#808080',
+  '#a0a0a0',
+  '#a0a0a0',
+  '#a0a0a0',
+  '#a0a0a0',
+  '#ffffff',
+  '#ffffff'
+];
+
+const COLOR = [];
 
 export default {
   name: 'bbs-web',
@@ -129,19 +157,21 @@ export default {
     connected: false,
     command: null,
     commandType: 'text',
+    displays: ['VGA', 'HERCULES'],
+    displaySelected: 'VGA',
     escape: null,
     cursor: {
       x: 0,
-      y: 0,
+      y: 0
     },
     cursorStore: {
       x: 0,
-      y: 0,
+      y: 0
     },
     attr: {
       textColor: 15,
       backgroundColor: 1,
-      reversed: false,
+      reversed: false
     },
     rzDiag: false,
     rzFilename: null,
@@ -150,7 +180,7 @@ export default {
     rzUrl: null,
 
     keepConn: false,
-    keepConnMsg: '.',
+    keepConnMsg: '.'
   }),
 
   created() {
@@ -162,6 +192,11 @@ export default {
   },
 
   mounted() {
+    // Set the color preset by default(VGA)
+    for (var i = 0; i < 16; i++) {
+      COLOR[i] = COLOR_PRESET_VGA[i];
+    }
+
     this.$nextTick(() => {
       this.setupTerminal();
       this.setupNetwork();
@@ -265,6 +300,27 @@ export default {
       this.$refs.command.focus();
     },
 
+    displayChanged() {
+      var targetPreset = COLOR_PRESET_VGA;
+
+      if (this.displaySelected == 'HERCULES') {
+        targetPreset = COLOR_PRESET_HERCULES;
+      }
+
+      for (var i = 0; i < 16; i++) {
+        COLOR[i] = targetPreset[i];
+      }
+
+      // Clear whole webpage
+      document.getElementById('app').style.backgroundColor =
+        COLOR[this.attr.backgroundColor];
+
+      this.command = null;
+      this.enterCommand();
+
+      this.terminalClicked();
+    },
+
     write(text) {
       for (const ch of text) {
         if (this.escape) {
@@ -299,7 +355,7 @@ export default {
                 const charWidth = ch.charCodeAt(0) < 0x80 ? 1 : 2;
                 const cursor_px = {
                   x: this.cursor.x * FONT_WIDTH,
-                  y: this.cursor.y * FONT_HEIGHT,
+                  y: this.cursor.y * FONT_HEIGHT
                 };
                 var textColor = COLOR[this.attr.textColor];
                 var backgroundColor = COLOR[this.attr.backgroundColor];
@@ -320,7 +376,7 @@ export default {
                   cursor_px.x,
                   cursor_px.y,
                   charWidth * FONT_WIDTH,
-                  FONT_HEIGHT,
+                  FONT_HEIGHT
                 );
                 this.ctx2d.fillStyle = textColor;
                 this.ctx2d.fillText(ch, cursor_px.x, cursor_px.y);
@@ -452,9 +508,9 @@ export default {
         // Store and restore the cursor position
         {
           if (this.escape == '[s') {
-            this.cursorStore = {x: this.cursor.x, y: this.cursor.y};
+            this.cursorStore = { x: this.cursor.x, y: this.cursor.y };
           } else if (this.escape == '[u') {
-            this.cursor = {x: this.cursorStore.x, y: this.cursorStore.y};
+            this.cursor = { x: this.cursorStore.x, y: this.cursorStore.y };
           }
         }
       }
@@ -466,7 +522,7 @@ export default {
             0,
             0,
             this.$refs.terminal.width,
-            this.$refs.terminal.height,
+            this.$refs.terminal.height
           );
 
           // Clear whole webpage
@@ -482,7 +538,7 @@ export default {
             0,
             this.cursor.y * FONT_HEIGHT,
             this.$refs.terminal.clientWidth,
-            FONT_HEIGHT,
+            FONT_HEIGHT
           );
         } else if (this.escape.endsWith('[1K')) {
           this.ctx2d.fillStyle = COLOR[this.attr.backgroundColor];
@@ -490,7 +546,7 @@ export default {
             0,
             this.cursor.y * FONT_HEIGHT,
             (this.cursor.x + 1) * FONT_WIDTH,
-            FONT_HEIGHT,
+            FONT_HEIGHT
           );
         } else if (this.escape.endsWith('[0K') || this.escape.endsWith('[K')) {
           this.ctx2d.fillStyle = COLOR[this.attr.backgroundColor];
@@ -498,7 +554,7 @@ export default {
             this.cursor.x * FONT_WIDTH,
             this.cursor.y * FONT_HEIGHT,
             this.$refs.terminal.clientWidth - this.cursor.x * FONT_WIDTH,
-            FONT_HEIGHT,
+            FONT_HEIGHT
           );
         }
       }
@@ -529,7 +585,7 @@ export default {
         0,
         FONT_HEIGHT * (WINDOW_TOP + 1),
         this.$refs.terminal.clientWidth,
-        FONT_HEIGHT * (WINDOW_BOTTOM - WINDOW_TOP),
+        FONT_HEIGHT * (WINDOW_BOTTOM - WINDOW_TOP)
       );
       this.ctx2d.putImageData(copy, 0, FONT_HEIGHT * WINDOW_TOP);
       this.ctx2d.fillStyle = COLOR[this.attr.backgroundColor];
@@ -537,19 +593,21 @@ export default {
         0,
         WINDOW_BOTTOM * FONT_HEIGHT,
         this.$refs.terminal.clientWidth,
-        FONT_HEIGHT,
+        FONT_HEIGHT
       );
     },
 
     moveCommandInputPosition() {
       this.$refs.command.style.left =
         (
-          this.$refs.terminal.getBoundingClientRect().left + window.pageXOffset +
+          this.$refs.terminal.getBoundingClientRect().left +
+          window.pageXOffset +
           this.cursor.x * FONT_WIDTH
         ).toString() + 'px';
       this.$refs.command.style.top =
         (
-          this.$refs.terminal.getBoundingClientRect().top + window.pageYOffset +
+          this.$refs.terminal.getBoundingClientRect().top +
+          window.pageYOffset +
           this.cursor.y * FONT_HEIGHT
         ).toString() + 'px';
 
@@ -563,8 +621,8 @@ export default {
 
     onResize() {
       this.moveCommandInputPosition();
-    },
-  },
+    }
+  }
 };
 </script>
 
