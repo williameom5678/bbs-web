@@ -192,11 +192,6 @@ export default {
   },
 
   mounted() {
-    // Set the color preset by default(VGA)
-    for (var i = 0; i < 16; i++) {
-      COLOR[i] = COLOR_PRESET_VGA[i];
-    }
-
     this.$nextTick(() => {
       this.setupTerminal();
       this.setupNetwork();
@@ -277,6 +272,18 @@ export default {
     },
 
     setupTerminal() {
+      // Set the color preset by default(VGA)
+      for (var i = 0; i < 16; i++) {
+        COLOR[i] = COLOR_PRESET_VGA[i];
+      }
+
+      // If there is cookie, set the color by cookie
+      const cookieColor = this.getCookie('display');
+      if (cookieColor) {
+        this.displaySelected = cookieColor;
+      }
+      this.displayChanged();
+
       this.ctx2d = this.$refs.terminal.getContext('2d');
       if (this.ctx2d) {
         this.ctx2d.fillStyle = COLOR[this.attr.textColor];
@@ -315,10 +322,11 @@ export default {
       document.getElementById('app').style.backgroundColor =
         COLOR[this.attr.backgroundColor];
 
-      this.command = null;
-      this.enterCommand();
+      this.$refs.terminal.style.backgroundColor =
+        COLOR[this.attr.backgroundColor];
 
       this.terminalClicked();
+      this.setCookie('display', this.displaySelected, 365);
     },
 
     write(text) {
@@ -621,6 +629,29 @@ export default {
 
     onResize() {
       this.moveCommandInputPosition();
+    },
+
+    setCookie(cookie_name, value, days) {
+      var exdate = new Date();
+      exdate.setDate(exdate.getDate() + days);
+      var cookie_value =
+        escape(value) +
+        (days == null ? '' : ';    expires=' + exdate.toUTCString());
+      document.cookie = cookie_name + '=' + cookie_value;
+    },
+
+    getCookie(cookie_name) {
+      var x, y;
+      var val = document.cookie.split(';');
+
+      for (var i = 0; i < val.length; i++) {
+        x = val[i].substr(0, val[i].indexOf('='));
+        y = val[i].substr(val[i].indexOf('=') + 1);
+        x = x.replace(/^\s+|\s+$/g, '');
+        if (x == cookie_name) {
+          return unescape(y);
+        }
+      }
     }
   }
 };
@@ -635,13 +666,11 @@ export default {
 }
 
 #app {
-  background: #000040;
   font-family: 'neodgm' !important;
 }
 
 #terminal {
   margin-top: 16px;
-  background: #000040;
 }
 
 #command {
