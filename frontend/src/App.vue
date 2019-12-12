@@ -28,6 +28,7 @@
             v-model="selectedDisplay"
             @change="displayChanged()"
             label="디스플레이"
+            style="width: 130px"
             solo
           ></v-select>
           <v-btn text href="https://cafe.naver.com/olddos" target="_blank">
