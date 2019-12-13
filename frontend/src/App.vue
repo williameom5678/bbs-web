@@ -185,7 +185,8 @@ export default {
     commandType: 'text',
     fonts: [
       { text: '둥근모', value: 'neodgm' },
-      { text: '굵은체', value: 'neoiyg'}
+      { text: '굵은체', value: 'neoiyg'},
+      { text: '필기체', value: 'neopil'},
     ],
     displays: ['VGA', 'HERCULES'],
     selectedDisplay: 'VGA',
@@ -733,6 +734,13 @@ export default {
 @font-face {
   font-family: 'neoiyg';
   src: url('assets/neoiyg.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'neopil';
+  src: url('assets/neopil.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
