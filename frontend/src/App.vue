@@ -24,6 +24,14 @@
         <v-spacer></v-spacer>
         <v-toolbar-items>
           <v-select
+            :items="fonts"
+            v-model="selectedFont"
+            @change="displayChanged()"
+            label="글꼴"
+            style="width: 110px"
+            solo
+          ></v-select>
+          <v-select
             :items="displays"
             v-model="selectedDisplay"
             @change="displayChanged()"
@@ -51,6 +59,7 @@
           :type="commandType"
           @keyup.enter="enterCommand()"
         />
+
         <v-dialog v-model="connDiag" persistent width="256">
           <v-card>
             <v-card-text class="text-center">
@@ -65,6 +74,22 @@
             </v-card-text>
           </v-card>
         </v-dialog>
+
+        <v-dialog v-model="applyDiag" persistent width="256">
+          <v-card>
+            <v-card-text class="text-center">
+              <p class="margin-16">적용 중입니다..</p>
+              <v-progress-circular
+                :size="48"
+                :width="7"
+                color="green"
+                indeterminate
+                style="margin: 32px"
+              ></v-progress-circular>
+            </v-card-text>
+          </v-card>
+        </v-dialog>
+
         <v-dialog v-model="rzDiag" persistent width="256">
           <v-card>
             <v-card-text class="text-center">
@@ -158,8 +183,14 @@ export default {
     connected: false,
     command: null,
     commandType: 'text',
+    fonts: [
+      { text: '둥근모', value: 'neodgm' },
+      { text: '굵은체', value: 'neoiyg'}
+    ],
     displays: ['VGA', 'HERCULES'],
     selectedDisplay: 'VGA',
+    selectedFont: 'neodgm',
+    applyDiag: false,
     escape: null,
     cursor: {
       x: 0,
@@ -279,21 +310,27 @@ export default {
         COLOR[i] = COLOR_PRESET_VGA[i];
       }
 
-      // If there is cookie, set the color by cookie
+      // If there is cookie, apply cookie
       const cookieColor = this.getCookie('display');
       if (cookieColor) {
         this.selectedDisplay = cookieColor;
       }
-      this.displayChanged();
+
+      const cookieFont = this.getCookie('font');
+      if (cookieFont) {
+        this.selectedFont = cookieFont;
+      }
 
       this.ctx2d = this.$refs.terminal.getContext('2d');
       if (this.ctx2d) {
         this.ctx2d.fillStyle = COLOR[this.attr.textColor];
-        this.ctx2d.font = 'normal 16px neodgm';
+        this.ctx2d.font = 'normal 16px ' + this.selectedFont;
         this.ctx2d.textBaseline = 'top';
       } else {
         alert('error: cannot create a canvas context2d!');
       }
+
+      this.displayChanged(true);
     },
 
     enterCommand() {
@@ -309,7 +346,7 @@ export default {
       this.$refs.command.focus();
     },
 
-    displayChanged() {
+    displayChanged(isInitial = false) {
       var targetPreset = COLOR_PRESET_VGA;
 
       if (this.selectedDisplay == 'HERCULES') {
@@ -320,18 +357,35 @@ export default {
         COLOR[i] = targetPreset[i];
       }
 
+      // Set applied font
+      document.getElementById('app').style.fontFamily = this.selectedFont;
+
       // Clear whole webpage
       document.getElementById('app').style.backgroundColor =
         COLOR[this.attr.backgroundColor];
 
+      this.$refs.terminal.style.fontFamily = this.selectedFont;
+
+      this.$refs.command.style.fontFamily = this.selectedFont;
+
       this.$refs.terminal.style.backgroundColor =
         COLOR[this.attr.backgroundColor];
 
+      this.ctx2d.font = 'normal 16px ' + this.selectedFont;
+
       this.terminalClicked();
       this.setCookie('display', this.selectedDisplay, 365);
+      this.setCookie('font', this.selectedFont, 365);
 
-      // Rewrite last page text
-      this.write(this.lastPageText);
+      if (!isInitial) {
+        this.applyDiag = true;
+
+        setTimeout(() => {
+          // Rewrite last page text
+          this.write(this.lastPageText);
+          this.applyDiag = false;
+        }, 4000);
+      }
     },
 
     write(text) {
@@ -543,9 +597,10 @@ export default {
           document.getElementById('app').style.backgroundColor =
             COLOR[this.attr.backgroundColor];
 
-
           // Refresh lastPageText (after 2J, there is no any other text)
           this.lastPageText = '\x1b[2J';
+          this.cursor.x = 0;
+          this.cursor.y = 0;
         }
       }
       // Clear a line
@@ -671,6 +726,13 @@ export default {
 @font-face {
   font-family: 'neodgm';
   src: url('assets/neodgm.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'neoiyg';
+  src: url('assets/neoiyg.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
