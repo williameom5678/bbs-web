@@ -181,7 +181,8 @@ export default {
     rzUrl: null,
 
     keepConn: false,
-    keepConnMsg: '.'
+    keepConnMsg: '.',
+    lastPageText: '',
   }),
 
   created() {
@@ -328,10 +329,14 @@ export default {
 
       this.terminalClicked();
       this.setCookie('display', this.selectedDisplay, 365);
+
+      // Rewrite last page text
+      this.write(this.lastPageText);
     },
 
     write(text) {
       for (const ch of text) {
+        this.lastPageText += ch;
         if (this.escape) {
           this.escape = this.escape + ch;
           if (this.endOfEscape()) {
@@ -537,6 +542,10 @@ export default {
           // Clear whole webpage
           document.getElementById('app').style.backgroundColor =
             COLOR[this.attr.backgroundColor];
+
+
+          // Refresh lastPageText (after 2J, there is no any other text)
+          this.lastPageText = '\x1b[2J';
         }
       }
       // Clear a line
