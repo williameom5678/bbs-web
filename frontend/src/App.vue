@@ -39,9 +39,11 @@
             style="width: 130px"
             solo
           ></v-select>
+          <!--
           <v-btn @click="uploadFile()" style="width: 160px"
             >업로드파일 준비</v-btn
           >
+          -->
         </v-toolbar-items>
       </v-toolbar>
       <div class="text-center">
@@ -51,6 +53,7 @@
           width="640"
           height="528"
           @click="terminalClicked()"
+          @mousemove="mouseMove"
         ></canvas>
         <input
           id="command"
@@ -277,7 +280,9 @@ export default {
 
     keepConn: false,
     keepConnMsg: '.',
-    lastPageText: ''
+    lastPageText: '',
+    lastPageTextPos: [],
+    smartMouse: []
   }),
 
   created() {
@@ -369,15 +374,20 @@ export default {
     },
 
     uploadFile() {
+      /*
       this.szDiag = true;
+      */
     },
 
     szCancel() {
+      /*
       this.szDiag = false;
       this.fileToUpload = null;
+      */
     },
 
     szUpload() {
+      /*
       console.log('Upload File:', this.fileToUpload);
       const formData = new FormData();
       formData.append('file', this.fileToUpload);
@@ -393,6 +403,7 @@ export default {
         .catch(function() {
           console.log('FAILURE!!');
         });
+      */
     },
 
     setupTerminal() {
@@ -482,6 +493,7 @@ export default {
     write(text) {
       for (const ch of text) {
         this.lastPageText += ch;
+        this.lastPageTextPos.push({ x: this.cursor.x, y: this.cursor.y });
         if (this.escape) {
           this.escape = this.escape + ch;
           if (this.endOfEscape()) {
@@ -550,6 +562,9 @@ export default {
           }
         }
       }
+
+      // Rebuild smart mouse
+      this.rebuildSmartMouse();
 
       // Move the command textfield to the cursor position
       this.moveCommandInputPosition();
@@ -690,6 +705,12 @@ export default {
 
           // Refresh lastPageText (after 2J, there is no any other text)
           this.lastPageText = '\x1b[2J';
+          this.lastPageTextPos = [
+            { x: 0, y: 0 },
+            { x: 0, y: 0 },
+            { x: 0, y: 0 },
+            { x: 0, y: 0 }
+          ];
           this.cursor.x = 0;
           this.cursor.y = 0;
         }
@@ -759,6 +780,49 @@ export default {
         this.$refs.terminal.clientWidth,
         FONT_HEIGHT
       );
+    },
+
+    rebuildSmartMouse() {
+      this.smartMouse = [];
+
+      {
+        const pattern = /([0-9]+)\. /g;
+        var result = null;
+        while ((result = pattern.exec(this.lastPageText))) {
+          const link = {
+            command: result[1],
+            px: {
+              x: this.lastPageTextPos[result.index].x * FONT_WIDTH,
+              y: this.lastPageTextPos[result.index].y * FONT_HEIGHT,
+              width: this.ctx2d.measureText(result[1]).width,
+              height: FONT_HEIGHT
+            }
+          };
+          this.smartMouse.push(link);
+        }
+      }
+    },
+
+    mouseMove(e) {
+      const mouseX = e.clientX - this.$refs.terminal.getBoundingClientRect().left;
+      const mouseY = e.clientY - this.$refs.terminal.getBoundingClientRect().top;
+
+      for (const sm of this.smartMouse) {
+        if (
+          mouseX >= sm.px.x &&
+          mouseY >= sm.px.y &&
+          mouseX < sm.px.x + sm.px.width &&
+          mouseY < sm.px.y + sm.px.height
+        ) {
+          this.ctx2d.fillStyle = '#ff0000';
+          this.ctx2d.fillRect(sm.px.x, sm.px.y, sm.px.width, sm.px.height);
+        }
+      }
+    },
+
+    enterCommandBySmartMouse(command) {
+      this.command = command;
+      this.enterCommand();
     },
 
     moveCommandInputPosition() {
