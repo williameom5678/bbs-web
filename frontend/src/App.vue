@@ -39,9 +39,9 @@
             style="width: 130px"
             solo
           ></v-select>
-          <v-btn text href="https://cafe.naver.com/olddos" target="_blank">
-            <span class="mr-2">도스박물관 카페</span>
-          </v-btn>
+          <v-btn @click="uploadFile()" style="width: 160px"
+            >업로드파일 준비</v-btn
+          >
         </v-toolbar-items>
       </v-toolbar>
       <div class="text-center">
@@ -117,6 +117,62 @@
             </v-card-actions>
           </v-card>
         </v-dialog>
+
+        <v-dialog v-model="szDiag" persistent width="384">
+          <v-card>
+            <v-card-text class="text-center">
+              <div class="margin-16">
+                업로드 커맨드 실행 전<br />
+                파일을 준비하는 과정입니다<br />
+              </div>
+              <div class="margin-16">
+                <v-file-input
+                  v-model="fileToUpload"
+                  placeholder="파일을 선택해 주세요"
+                  label="파일 선택"
+                  show-size
+                  prepend-icon="mdi-paperclip"
+                >
+                  <template v-slot:selection="{ text }">
+                    <v-chip small label color="primary">
+                      {{ text }}
+                    </v-chip>
+                  </template></v-file-input
+                >
+              </div>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn color="green darken-1" text @click="szCancel()"
+                >취소</v-btn
+              >
+              <v-btn color="green darken-1" text @click="szUpload()"
+                >업로드</v-btn
+              >
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <v-dialog v-model="szProgressDiag" persistent width="256">
+          <v-card>
+            <v-card-text class="text-center">
+              <div ref="szDiagText" class="margin-16"></div>
+              <div ref="szProgress" class="margin-16"></div>
+              <div>
+                <v-progress-linear
+                  color="light-green darken-4"
+                  height="16"
+                  :value="((szSent / szTotal) * 100).toFixed(0)"
+                  striped
+                ></v-progress-linear>
+              </div>
+            </v-card-text>
+            <v-card-actions v-if="szSent == szTotal">
+              <v-spacer></v-spacer>
+              <v-btn color="green darken-1" text @click="szClose()">확인</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
       </div>
     </v-content>
   </v-app>
@@ -185,8 +241,8 @@ export default {
     commandType: 'text',
     fonts: [
       { text: '둥근모', value: 'neodgm' },
-      { text: '굵은체', value: 'neoiyg'},
-      { text: '필기체', value: 'neopil'},
+      { text: '굵은체', value: 'neoiyg' },
+      { text: '필기체', value: 'neopil' }
     ],
     displays: ['VGA', 'HERCULES'],
     selectedDisplay: 'VGA',
@@ -206,15 +262,22 @@ export default {
       backgroundColor: 1,
       reversed: false
     },
+
     rzDiag: false,
     rzFilename: null,
     rzReceived: 0,
     rzTotal: 1,
     rzUrl: null,
 
+    fileToUpload: null,
+    szDiag: false,
+    szProgressDiag: false,
+    szSent: 0,
+    szTotal: 1,
+
     keepConn: false,
     keepConnMsg: '.',
-    lastPageText: '',
+    lastPageText: ''
   }),
 
   created() {
@@ -303,6 +366,33 @@ export default {
         this.write('파일수신이 완료되었습니다. [ENTER]를 눌러주세요.');
         this.terminalClicked();
       });
+    },
+
+    uploadFile() {
+      this.szDiag = true;
+    },
+
+    szCancel() {
+      this.szDiag = false;
+      this.fileToUpload = null;
+    },
+
+    szUpload() {
+      console.log('Upload File:', this.fileToUpload);
+      const formData = new FormData();
+      formData.append('file', this.fileToUpload);
+      axios
+        .post('/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+        .then(function() {
+          console.log('SUCCESS!!');
+        })
+        .catch(function() {
+          console.log('FAILURE!!');
+        });
     },
 
     setupTerminal() {
