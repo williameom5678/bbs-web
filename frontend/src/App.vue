@@ -194,6 +194,8 @@ const FONT_HEIGHT = 16;
 const SCREEN_WIDTH = 80;
 const SCREEN_HEIGHT = 33;
 
+const SMART_MOUSE_BORDER = 2;
+
 var WINDOW_TOP = 0;
 var WINDOW_BOTTOM = SCREEN_HEIGHT - 1;
 
@@ -845,17 +847,21 @@ export default {
 
           // Mouse smart mouse box to the position
           this.$refs.smartMouseBox.style.left =
-            sm.px.x +
+            sm.px.x -
+            SMART_MOUSE_BORDER +
             this.$refs.terminal.getBoundingClientRect().left +
             window.pageXOffset +
             'px';
           this.$refs.smartMouseBox.style.top =
-            sm.px.y +
+            sm.px.y -
+            SMART_MOUSE_BORDER +
             this.$refs.terminal.getBoundingClientRect().top +
             window.pageYOffset +
             'px';
-          this.$refs.smartMouseBox.style.width = sm.px.width + 'px';
-          this.$refs.smartMouseBox.style.height = sm.px.height + 'px';
+          this.$refs.smartMouseBox.style.width =
+            sm.px.width + 2 * SMART_MOUSE_BORDER + 'px';
+          this.$refs.smartMouseBox.style.height =
+            sm.px.height + 2 * SMART_MOUSE_BORDER + 'px';
           this.$refs.smartMouseBox.style.visibility = 'visible';
 
           return;
@@ -981,10 +987,10 @@ export default {
 .smart-mouse-box {
   margin: 0 !important;
   padding: 0 !important;
-  border-top: 1px solid #ffffff !important;
-  border-left: 1px solid #ffffff !important;
-  border-right: 1px solid #333333 !important;
-  border-bottom: 1px solid #333333 !important;
+  border-top: 2px solid #ffffff !important;
+  border-left: 2px solid #ffffff !important;
+  border-right: 2px solid #aaaaaa !important;
+  border-bottom: 2px solid #aaaaaa !important;
   outline: none !important;
   position: absolute;
   visibility: hidden;
