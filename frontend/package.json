@@ -39,7 +39,8 @@
     "rules": {
       "no-console": "off",
       "no-unused-vars": "off",
-      "no-useless-escape": "off"
+      "no-useless-escape": "off",
+      "no-control-regex": "off"
     },
     "parserOptions": {
       "parser": "babel-eslint"

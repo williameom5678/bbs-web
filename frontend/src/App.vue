@@ -151,7 +151,9 @@
             </v-card-text>
             <v-card-actions>
               <v-spacer></v-spacer>
-              <v-btn color="green darken-1" text @click="szCancel()">취소</v-btn>
+              <v-btn color="green darken-1" text @click="szCancel()"
+                >취소</v-btn
+              >
               <v-btn color="green darken-1" text @click="szUpload()"
                 >업로드</v-btn
               >
@@ -798,19 +800,25 @@ export default {
         /,([a-z]+),/gi, // ,x,
         /,([a-z]+)\)/gi, // ,x)
         /\(([a-z]+)\)/gi, // (x)
-        /(https?:\/\/[a-z0-9-\.\/]+)/gi, // URL
-        /([0-9]+) +.+ +[0-9-]+ +[0-9]+ + [0-9]+ +.*/gi // Article
+        /(https?:\/\/[a-z0-9-\.\/?&_=]+)/gi, // URL
+        /([0-9]+) +.+ +[0-9-]+ +[0-9]+ + [0-9]+ +.*/gi, // Article
+        /([0-9]+) +[0-9\.]+ .*/gi, // News (JTBC)
+        /([0-9]+) +.+ +[0-9-]+ .*/gi, // News (Oh my news, IT news)
+        /([0-9]+) +(JTBC|오마이뉴스|전자신문|속보|정치|연예|전체기사|주요기사|사회|오늘의 뉴스|게임)/gi // News Titles
       ];
 
       for (const pattern of smartMousePatterns) {
         var result = null;
         while ((result = pattern.exec(this.lastPageText))) {
+          // Remove ANSI escape code from the string(result[0])
+          const normalText = result[0].replace(/\x1b\[=.{1,3}[FG]{1}/gi, '');
+
           const link = {
             command: result[1],
             px: {
               x: this.lastPageTextPos[result.index].x * FONT_WIDTH,
               y: this.lastPageTextPos[result.index].y * FONT_HEIGHT,
-              width: this.ctx2d.measureText(result[0]).width,
+              width: this.ctx2d.measureText(normalText).width,
               height: FONT_HEIGHT
             }
           };
