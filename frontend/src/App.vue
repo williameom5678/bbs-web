@@ -490,6 +490,8 @@ export default {
           // Rewrite last page text
           this.write(this.lastPageText);
           this.applyDiag = false;
+
+          this.terminalClicked();
         }, 4000);
       }
     },
@@ -866,6 +868,8 @@ export default {
 
       this.$refs.smartMouseBox.style.visibility = 'hidden';
       this.smartMousdCmd = '';
+
+      this.terminalClicked();
     },
 
     moveCommandInputPosition() {
