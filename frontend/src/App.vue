@@ -26,7 +26,7 @@
           <v-select
             :items="fonts"
             v-model="selectedFont"
-            @change="displayChanged()"
+            @change="displayChanged"
             label="글꼴"
             style="width: 110px"
             solo
@@ -34,7 +34,7 @@
           <v-select
             :items="displays"
             v-model="selectedDisplay"
-            @change="displayChanged()"
+            @change="displayChanged"
             label="디스플레이"
             style="width: 130px"
             solo
@@ -52,15 +52,20 @@
           ref="terminal"
           width="640"
           height="528"
-          @click="terminalClicked()"
+          @click="terminalClicked"
           @mousemove="mouseMove"
         ></canvas>
+        <div
+          ref="smartMouseBox"
+          class="smart-mouse-box"
+          @click="smartMouseClicked"
+        ></div>
         <input
           id="command"
           ref="command"
           v-model="command"
           :type="commandType"
-          @keyup.enter="enterCommand()"
+          @keyup.enter="enterCommand"
         />
 
         <v-dialog v-model="connDiag" persistent width="256">
@@ -116,7 +121,7 @@
                 text
                 >다운로드</v-btn
               >
-              <v-btn color="green darken-1" text @click="rzClose()">닫기</v-btn>
+              <v-btn color="green darken-1" text @click="rzClose">닫기</v-btn>
             </v-card-actions>
           </v-card>
         </v-dialog>
@@ -146,10 +151,8 @@
             </v-card-text>
             <v-card-actions>
               <v-spacer></v-spacer>
-              <v-btn color="green darken-1" text @click="szCancel()"
-                >취소</v-btn
-              >
-              <v-btn color="green darken-1" text @click="szUpload()"
+              <v-btn color="green darken-1" text @click="szCancel">취소</v-btn>
+              <v-btn color="green darken-1" text @click="szUpload"
                 >업로드</v-btn
               >
             </v-card-actions>
@@ -172,7 +175,7 @@
             </v-card-text>
             <v-card-actions v-if="szSent == szTotal">
               <v-spacer></v-spacer>
-              <v-btn color="green darken-1" text @click="szClose()">확인</v-btn>
+              <v-btn color="green darken-1" text @click="szClose">확인</v-btn>
             </v-card-actions>
           </v-card>
         </v-dialog>
@@ -282,7 +285,8 @@ export default {
     keepConnMsg: '.',
     lastPageText: '',
     lastPageTextPos: [],
-    smartMouse: []
+    smartMouse: [],
+    smartMouseCmd: null
   }),
 
   created() {
@@ -784,9 +788,19 @@ export default {
 
     rebuildSmartMouse() {
       this.smartMouse = [];
+      this.$refs.smartMouseBox.style.visibility = 'hidden';
 
-      {
-        const pattern = /([0-9]+)\. /g;
+      const smartMousePatterns = [
+        /([0-9]+)\. /g, // 99.
+        /\(([a-z]+),/gi, // (x,
+        /,([a-z]+),/gi, // ,x,
+        /,([a-z]+)\)/gi, // ,x)
+        /\(([a-z]+)\)/gi, // (x)
+        /(https?:\/\/[a-z0-9-\.\/]+)/gi, // URL
+        /([0-9]+) +.+ +[0-9-]+ +[0-9]+ + [0-9]+ +.*/gi // Article
+      ];
+
+      for (const pattern of smartMousePatterns) {
         var result = null;
         while ((result = pattern.exec(this.lastPageText))) {
           const link = {
@@ -794,7 +808,7 @@ export default {
             px: {
               x: this.lastPageTextPos[result.index].x * FONT_WIDTH,
               y: this.lastPageTextPos[result.index].y * FONT_HEIGHT,
-              width: this.ctx2d.measureText(result[1]).width,
+              width: this.ctx2d.measureText(result[0]).width,
               height: FONT_HEIGHT
             }
           };
@@ -804,8 +818,10 @@ export default {
     },
 
     mouseMove(e) {
-      const mouseX = e.clientX - this.$refs.terminal.getBoundingClientRect().left;
-      const mouseY = e.clientY - this.$refs.terminal.getBoundingClientRect().top;
+      const mouseX =
+        e.clientX - this.$refs.terminal.getBoundingClientRect().left;
+      const mouseY =
+        e.clientY - this.$refs.terminal.getBoundingClientRect().top;
 
       for (const sm of this.smartMouse) {
         if (
@@ -814,15 +830,37 @@ export default {
           mouseX < sm.px.x + sm.px.width &&
           mouseY < sm.px.y + sm.px.height
         ) {
-          this.ctx2d.fillStyle = '#ff0000';
-          this.ctx2d.fillRect(sm.px.x, sm.px.y, sm.px.width, sm.px.height);
+          // Intenally set the smart mouse command
+          this.smartMouseCmd = sm.command;
+
+          // Mouse smart mouse box to the position
+          this.$refs.smartMouseBox.style.left =
+            sm.px.x +
+            this.$refs.terminal.getBoundingClientRect().left +
+            window.pageXOffset +
+            'px';
+          this.$refs.smartMouseBox.style.top =
+            sm.px.y +
+            this.$refs.terminal.getBoundingClientRect().top +
+            window.pageYOffset +
+            'px';
+          this.$refs.smartMouseBox.style.width = sm.px.width + 'px';
+          this.$refs.smartMouseBox.style.height = sm.px.height + 'px';
+          this.$refs.smartMouseBox.style.visibility = 'visible';
+
+          return;
         }
       }
+
+      // If no smart mouse position has detected, hide the smart mouse box
+      this.$refs.smartMouseBox.style.visibility = 'hidden';
     },
 
-    enterCommandBySmartMouse(command) {
-      this.command = command;
+    smartMouseClicked() {
+      this.command = this.smartMouseCmd;
       this.enterCommand();
+
+      this.$refs.smartMouseBox.style.visibility = 'hidden';
     },
 
     moveCommandInputPosition() {
@@ -921,5 +959,17 @@ export default {
 
 .margin-16 {
   padding-top: 16px !important;
+}
+
+.smart-mouse-box {
+  margin: 0 !important;
+  padding: 0 !important;
+  border-top: 1px solid #ffffff !important;
+  border-left: 1px solid #ffffff !important;
+  border-right: 1px solid #333333 !important;
+  border-bottom: 1px solid #333333 !important;
+  outline: none !important;
+  position: absolute;
+  visibility: hidden;
 }
 </style>
