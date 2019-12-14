@@ -466,16 +466,9 @@ export default {
       // Set applied font
       document.getElementById('app').style.fontFamily = this.selectedFont;
 
-      // Clear whole webpage
-      document.getElementById('app').style.backgroundColor =
-        COLOR[this.attr.backgroundColor];
-
       this.$refs.terminal.style.fontFamily = this.selectedFont;
 
       this.$refs.command.style.fontFamily = this.selectedFont;
-
-      this.$refs.terminal.style.backgroundColor =
-        COLOR[this.attr.backgroundColor];
 
       this.ctx2d.font = 'normal 16px ' + this.selectedFont;
 
@@ -487,6 +480,13 @@ export default {
         this.applyDiag = true;
 
         setTimeout(() => {
+          // Clear whole webpage
+          document.getElementById('app').style.backgroundColor =
+            COLOR[this.attr.backgroundColor];
+
+          this.$refs.terminal.style.backgroundColor =
+            COLOR[this.attr.backgroundColor];
+
           // Rewrite last page text
           this.write(this.lastPageText);
           this.applyDiag = false;
@@ -857,10 +857,15 @@ export default {
     },
 
     smartMouseClicked() {
-      this.command = this.smartMouseCmd;
-      this.enterCommand();
+      if (/http:\/\//.exec(this.smartMouseCmd)) {
+        window.open(this.smartMouseCmd, '_blank');
+      } else {
+        this.command = this.smartMouseCmd;
+        this.enterCommand();
+      }
 
       this.$refs.smartMouseBox.style.visibility = 'hidden';
+      this.smartMousdCmd = '';
     },
 
     moveCommandInputPosition() {
