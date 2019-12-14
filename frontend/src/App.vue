@@ -813,7 +813,17 @@ export default {
         var result = null;
         while ((result = pattern.exec(this.lastPageText))) {
           // Remove ANSI escape code from the string(result[0])
-          const normalText = result[0].replace(/\x1b\[=.{1,3}[FG]{1}/gi, '');
+          result[0] = result[0].replace(/\x1b\[=.{1,3}[FG]{1}/gi, '');
+
+          // If there is doubleWidthCharacter, replace it to '가' for correct measuring
+          var normalText = '';
+          for (const ch of result[0]) {
+            if (this.doubleWidth(ch)) {
+              normalText += '가';
+            } else {
+              normalText += ch;
+            }
+          }
 
           const link = {
             command: result[1],
