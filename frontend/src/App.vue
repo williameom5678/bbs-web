@@ -26,7 +26,7 @@
           <v-select
             :items="fonts"
             v-model="selectedFont"
-            @change="displayChanged"
+            @change="displayChanged()"
             label="글꼴"
             style="width: 110px"
             solo
@@ -34,7 +34,7 @@
           <v-select
             :items="displays"
             v-model="selectedDisplay"
-            @change="displayChanged"
+            @change="displayChanged()"
             label="디스플레이"
             style="width: 130px"
             solo
@@ -52,20 +52,20 @@
           ref="terminal"
           width="640"
           height="528"
-          @click="terminalClicked"
+          @click="terminalClicked()"
           @mousemove="mouseMove"
         ></canvas>
         <div
           ref="smartMouseBox"
           class="smart-mouse-box"
-          @click="smartMouseClicked"
+          @click="smartMouseClicked()"
         ></div>
         <input
           id="command"
           ref="command"
           v-model="command"
           :type="commandType"
-          @keyup.enter="enterCommand"
+          @keyup.enter="enterCommand()"
         />
 
         <v-dialog v-model="connDiag" persistent width="256">
@@ -121,7 +121,7 @@
                 text
                 >다운로드</v-btn
               >
-              <v-btn color="green darken-1" text @click="rzClose">닫기</v-btn>
+              <v-btn color="green darken-1" text @click="rzClose()">닫기</v-btn>
             </v-card-actions>
           </v-card>
         </v-dialog>
@@ -151,8 +151,8 @@
             </v-card-text>
             <v-card-actions>
               <v-spacer></v-spacer>
-              <v-btn color="green darken-1" text @click="szCancel">취소</v-btn>
-              <v-btn color="green darken-1" text @click="szUpload"
+              <v-btn color="green darken-1" text @click="szCancel()">취소</v-btn>
+              <v-btn color="green darken-1" text @click="szUpload()"
                 >업로드</v-btn
               >
             </v-card-actions>
@@ -175,7 +175,7 @@
             </v-card-text>
             <v-card-actions v-if="szSent == szTotal">
               <v-spacer></v-spacer>
-              <v-btn color="green darken-1" text @click="szClose">확인</v-btn>
+              <v-btn color="green darken-1" text @click="szClose()">확인</v-btn>
             </v-card-actions>
           </v-card>
         </v-dialog>
