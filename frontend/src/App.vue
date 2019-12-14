@@ -802,6 +802,7 @@ export default {
         /,([a-z]+),/gi, // ,x,
         /,([a-z]+)\)/gi, // ,x)
         /\(([a-z]+)\)/gi, // (x)
+        /\[([a-z]+)\]/gi, // [x]
         /(https?:\/\/[a-z0-9-\.\/?&_=]+)/gi, // URL
         /([0-9]+) +.+ +[0-9-]+ +[0-9]+ + [0-9]+ +.*/gi, // Article
         /([0-9]+) +[0-9\.]+ .*/gi, // News (JTBC)
@@ -971,6 +972,7 @@ export default {
 }
 
 #app {
+  background: #000000;
   font-family: 'neodgm' !important;
 }
 
