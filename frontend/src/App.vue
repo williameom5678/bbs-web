@@ -803,7 +803,7 @@ export default {
         /,([a-z]+)\)/gi, // ,x)
         /\(([a-z]+)\)/gi, // (x)
         /\[([a-z0-9]+)\]/gi, // [x]
-        /(https?:\/\/[a-z0-9-\.\/?&_=]+)/gi, // URL
+        /(https?:\/\/[a-z0-9-\.\/?&_=#]+)/gi, // URL
         /([0-9]+) +.+ +[0-9-]+ +[0-9]+ + [0-9]+ +.*/gi, // Article
         /([0-9]+) +[0-9\.]+ .*/gi, // News (JTBC)
         /([0-9]+) +.+ +[0-9-]+ .*/gi, // News (Oh my news, IT news)
@@ -884,7 +884,7 @@ export default {
     },
 
     smartMouseClicked() {
-      if (/http:\/\//.exec(this.smartMouseCmd)) {
+      if (/https?:\/\//.exec(this.smartMouseCmd)) {
         window.open(this.smartMouseCmd, '_blank');
       } else {
         this.command = this.smartMouseCmd;
