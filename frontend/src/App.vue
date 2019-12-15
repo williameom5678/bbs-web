@@ -790,6 +790,13 @@ export default {
         this.$refs.terminal.clientWidth,
         FONT_HEIGHT
       );
+
+      // Modify the position of lastPageTextPos (scroll up)
+      for (const pos of this.lastPageTextPos) {
+        if (pos.y >= WINDOW_TOP && pos.y <= WINDOW_BOTTOM) {
+          pos.y--;
+        }
+      }
     },
 
     rebuildSmartMouse() {
