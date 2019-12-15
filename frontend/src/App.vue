@@ -797,7 +797,8 @@ export default {
       this.$refs.smartMouseBox.style.visibility = 'hidden';
 
       const smartMousePatterns = [
-        /(?:([0-9]+)\.|\[([0-9]+)\])\s[ㄱ-힣a-z/\s]+/gi, // 99. xx / [99].xx
+        /([0-9]+)\.\s[ㄱ-힣a-z/\s]+/gi, // 99. xx
+        /\[([0-9]+)\]\s[ㄱ-힣a-z/\s]+/gi, // [99].xx
         /\(([a-z]+),/gi, // (x,
         /,([a-z]+),/gi, // ,x,
         /,([a-z]+)\)/gi, // ,x)
