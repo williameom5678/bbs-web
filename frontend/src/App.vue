@@ -797,7 +797,7 @@ export default {
       this.$refs.smartMouseBox.style.visibility = 'hidden';
 
       const smartMousePatterns = [
-        /([0-9]+)\. /g, // 99.
+        /(?:([0-9]+)\.|\[([0-9]+)\])\s[ㄱ-힣a-z/\s]+/gi, // 99. xx / [99].xx
         /\(([a-z]+),/gi, // (x,
         /,([a-z]+),/gi, // ,x,
         /,([a-z]+)\)/gi, // ,x)
@@ -814,7 +814,7 @@ export default {
         var result = null;
         while ((result = pattern.exec(this.lastPageText))) {
           // Remove ANSI escape code from the string(result[0])
-          result[0] = result[0].replace(/\x1b\[=.{1,3}[FG]{1}/gi, '');
+          result[0] = result[0].replace(/\x1b\[=.{1,3}[FG]{1}/gi, '').trim();
 
           // If there is doubleWidthCharacter, replace it to '가' for correct measuring
           var normalText = '';
