@@ -192,4 +192,7 @@ io.on('connection', function(ioSocket) {
   });
 });
 
+console.error('Listening...');
+
 httpServer.listen(8080, '0.0.0.0');
+

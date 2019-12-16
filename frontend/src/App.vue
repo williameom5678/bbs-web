@@ -301,10 +301,12 @@ export default {
 
   created() {
     window.addEventListener('resize', this.onResize);
+    window.addEventListener('beforeunload', this.onBeforeUnload);
   },
 
   destroyed() {
     window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('beforeunload', this.onBeforeUnload);
   },
 
   mounted() {
@@ -935,6 +937,10 @@ export default {
 
     onResize() {
       this.moveCommandInputPosition();
+    },
+
+    onBeforeUnload() {
+      this.io.disconnect();
     },
 
     setCookie(cookie_name, value, days) {
