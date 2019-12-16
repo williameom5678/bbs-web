@@ -191,7 +191,7 @@
 
 <script>
 import io from 'socket.io-client';
-import copy from 'copy-text-to-clipboard';
+import copy from 'copy-to-clipboard';
 
 const FONT_WIDTH = 8;
 const FONT_HEIGHT = 16;
