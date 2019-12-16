@@ -23,7 +23,9 @@
         </v-toolbar-title>
         <v-spacer></v-spacer>
         <v-toolbar-items>
-          <v-btn @click="copyToClipboard()"><v-icon>mdi-clipboard-text-outline</v-icon></v-btn>
+          <v-btn @click="copyToClipboard()"
+            ><v-icon>mdi-clipboard-text-outline</v-icon></v-btn
+          >
           <v-select
             :items="fonts"
             v-model="selectedFont"
@@ -959,10 +961,14 @@ export default {
     },
 
     copyToClipboard() {
-      if (copy(this.lastPageText)) {
-        alert("현재 화면이 클립보드에 복사되었습니다.");
+      const normalText = this.lastPageText
+        .replace(/\x1b.{1,6}[@ABCDFGHJKSfhlmprsu]/gi, '')
+        .replace(/\x0d\x00/gi, '');
+
+      if (copy(normalText)) {
+        alert('현재 화면이 클립보드에 복사되었습니다.');
       } else {
-        alert("클립보드에 복사 중 오류가 발생하였습니다.");
+        alert('클립보드에 복사 중 오류가 발생하였습니다.');
       }
     }
   }
