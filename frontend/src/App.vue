@@ -961,9 +961,26 @@ export default {
     },
 
     copyToClipboard() {
-      const normalText = this.lastPageText
-        .replace(/\x1b.{1,6}[@ABCDFGHJKSfhlmprsu]/gi, '')
-        .replace(/\x0d\x00/gi, '');
+      var normalText = '';
+      var esc = false;
+
+      for (const ch of this.lastPageText) {
+        if (!esc && ch == '\x1b') {
+          esc = true;
+          continue;
+        }
+
+        if (esc && ('@ABCDFGHJKSfhlmprsu'.indexOf(ch) != -1)) {
+          esc = false;
+          continue;
+        }
+
+        if (!esc) {
+          normalText += ch;
+        }
+      }
+
+      normalText = normalText.replace(/\x0d\x00/gi, '');
 
       if (copy(normalText)) {
         alert('현재 화면이 클립보드에 복사되었습니다.');
