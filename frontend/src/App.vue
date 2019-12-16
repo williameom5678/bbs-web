@@ -23,6 +23,7 @@
         </v-toolbar-title>
         <v-spacer></v-spacer>
         <v-toolbar-items>
+          <v-btn @click="copyToClipboard()"><v-icon>mdi-clipboard-text-outline</v-icon></v-btn>
           <v-select
             :items="fonts"
             v-model="selectedFont"
@@ -188,6 +189,7 @@
 
 <script>
 import io from 'socket.io-client';
+import copy from 'copy-text-to-clipboard';
 
 const FONT_WIDTH = 8;
 const FONT_HEIGHT = 16;
@@ -953,6 +955,14 @@ export default {
         if (x == cookie_name) {
           return unescape(y);
         }
+      }
+    },
+
+    copyToClipboard() {
+      if (copy(this.lastPageText)) {
+        alert("현재 화면이 클립보드에 복사되었습니다.");
+      } else {
+        alert("클립보드에 복사 중 오류가 발생하였습니다.");
       }
     }
   }
