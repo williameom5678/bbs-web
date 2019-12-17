@@ -257,7 +257,7 @@ export default {
       { text: '둥근모', value: 'neodgm' },
       { text: '굵은체', value: 'neoiyg' },
       { text: '필기체', value: 'neopil' },
-      { text: '옛체', value: 'neoancient' },
+      { text: '굵은달', value: 'neoancient' },
       { text: '샘물체', value: 'neowater' }
     ],
     displays: ['VGA', 'HERCULES'],
