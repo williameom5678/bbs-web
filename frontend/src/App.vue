@@ -203,42 +203,62 @@ const SMART_MOUSE_BORDER = 2;
 var WINDOW_TOP = 0;
 var WINDOW_BOTTOM = SCREEN_HEIGHT - 1;
 
-const COLOR_PRESET_VGA = [
-  '#000000', // Black
-  '#000080', // Blue
-  '#008000', // Green
-  '#008080', // Cyan
-  '#800000', // Red
-  '#800080', // Magenta
-  '#804000', // Brown
-  '#808080', // Light gray
-  '#404040', // Gray
-  '#4040ff', // Light blue
-  '#40ff40', // Light green
-  '#40ffff', // Light cyan
-  '#ff4040', // Light red
-  '#ff40ff', // Light magenta
-  '#ffff40', // Yellow
-  '#ffffff' // White
-];
-
-const COLOR_PRESET_HERCULES = [
-  '#000000',
-  '#000000',
-  '#808080',
-  '#808080',
-  '#808080',
-  '#808080',
-  '#808080',
-  '#a0a0a0',
-  '#a0a0a0',
-  '#808080',
-  '#a0a0a0',
-  '#a0a0a0',
-  '#a0a0a0',
-  '#a0a0a0',
-  '#ffffff',
-  '#ffffff'
+const THEMES = [
+  [
+    // VGA
+    '#000000', // Black
+    '#000080', // Blue
+    '#008000', // Green
+    '#008080', // Cyan
+    '#800000', // Red
+    '#800080', // Magenta
+    '#804000', // Brown
+    '#808080', // Light gray
+    '#404040', // Gray
+    '#4040ff', // Light blue
+    '#40ff40', // Light green
+    '#40ffff', // Light cyan
+    '#ff4040', // Light red
+    '#ff40ff', // Light magenta
+    '#ffff40', // Yellow
+    '#ffffff' // White
+  ],
+  [ // ACI
+    '#363636',
+    '#0d1926',
+    '#83ff08',
+    '#ff8308',
+    '#0883ff',
+    '#8308ff',
+    '#08ff83',
+    '#b6b6b6',
+    '#424242',
+    '#ff1e8e',
+    '#8eff1e',
+    '#ff8e1e',
+    '#1e8eff',
+    '#8e1eff',
+    '#1eff8e',
+    '#e4f4ff'
+  ],
+  [ // HERCULES
+    '#000000',
+    '#000000',
+    '#808080',
+    '#808080',
+    '#808080',
+    '#808080',
+    '#808080',
+    '#a0a0a0',
+    '#a0a0a0',
+    '#808080',
+    '#a0a0a0',
+    '#a0a0a0',
+    '#a0a0a0',
+    '#a0a0a0',
+    '#ffffff',
+    '#ffffff'
+  ]
 ];
 
 const COLOR = [];
@@ -260,8 +280,12 @@ export default {
       { text: '굵은달', value: 'neoancient' },
       { text: '샘물체', value: 'neowater' }
     ],
-    displays: ['VGA', 'HERCULES'],
-    selectedDisplay: 'VGA',
+    displays: [
+      { text: 'VGA', value: 0 },
+      { text: 'ACI', value: 1 },
+      { text: 'HERCULES', value: 2 }
+    ],
+    selectedDisplay: 0,
     selectedFont: 'neodgm',
     applyDiag: false,
     escape: null,
@@ -423,15 +447,10 @@ export default {
     },
 
     setupTerminal() {
-      // Set the color preset by default(VGA)
-      for (var i = 0; i < 16; i++) {
-        COLOR[i] = COLOR_PRESET_VGA[i];
-      }
-
       // If there is cookie, apply cookie
       const cookieColor = this.getCookie('display');
       if (cookieColor) {
-        this.selectedDisplay = cookieColor;
+        this.selectedDisplay = parseInt(cookieColor);
       }
 
       const cookieFont = this.getCookie('font');
@@ -465,14 +484,14 @@ export default {
     },
 
     displayChanged(isInitial = false) {
-      var targetPreset = COLOR_PRESET_VGA;
-
-      if (this.selectedDisplay == 'HERCULES') {
-        targetPreset = COLOR_PRESET_HERCULES;
+      if (isNaN(this.selectedDisplay)) {
+        this.selectedDisplay = 0;
       }
 
+      console.log(THEMES);
+
       for (var i = 0; i < 16; i++) {
-        COLOR[i] = targetPreset[i];
+        COLOR[i] = THEMES[this.selectedDisplay][i];
       }
 
       // Set applied font
@@ -976,7 +995,7 @@ export default {
           continue;
         }
 
-        if (esc && ('@ABCDFGHJKSfhlmprsu'.indexOf(ch) != -1)) {
+        if (esc && '@ABCDFGHJKSfhlmprsu'.indexOf(ch) != -1) {
           esc = false;
           continue;
         }
