@@ -8,6 +8,8 @@ const iconv = require('iconv-lite');
 const express = require('express');
 const app = express();
 
+require('console-stamp')(console, 'yyyy/mm/dd HH:MM:ss.l');
+
 app.use(express.static(process.cwd() + '/frontend/dist'));
 
 const httpServer = http.createServer(app);
@@ -19,7 +21,7 @@ const WEB_ADDR = 'goblins.iptime.org';
 const WEB_PORT = 8080;
 
 io.on('connection', function(ioSocket) {
-  console.error('Client connected:', ioSocket.client.conn.remoteAddress);
+  console.log('Client connected:', ioSocket.client.conn.remoteAddress);
 
   // Remain data to be parsed
   var remain = [];
@@ -53,7 +55,7 @@ io.on('connection', function(ioSocket) {
 
   // Deliver the bbs server close event to the ioSocket
   ioSocket.netSocket.on('close', () => {
-    console.error('Telnet disconnected:', ioSocket.client.conn.remoteAddress);
+    console.log('Telnet disconnected:', ioSocket.client.conn.remoteAddress);
     ioSocket.disconnect(true);
   });
 
@@ -99,7 +101,7 @@ io.on('connection', function(ioSocket) {
         mkdir(
           process.cwd() +
             '/frontend/dist/file-cache/' +
-            ioSocket.netSocket.rzTargetDir,
+            ioSocket.netSocket.rzTargetDir
         );
 
         ioSocket.netSocket.binaryTransmit = true;
@@ -108,7 +110,7 @@ io.on('connection', function(ioSocket) {
           cwd:
             process.cwd() +
             '/frontend/dist/file-cache/' +
-            ioSocket.netSocket.rzTargetDir,
+            ioSocket.netSocket.rzTargetDir
         });
 
         ioSocket.netSocket.rz.stdout.on('data', data => {
@@ -137,7 +139,7 @@ io.on('connection', function(ioSocket) {
               ioSocket.emit('rz-progress', {
                 received,
                 total,
-                bps,
+                bps
               });
             }
           }
@@ -152,13 +154,13 @@ io.on('connection', function(ioSocket) {
             cwd:
               process.cwd() +
               '/frontend/dist/file-cache/' +
-              ioSocket.netSocket.rzTargetDir,
+              ioSocket.netSocket.rzTargetDir
           });
           execSync('mv * "' + ioSocket.netSocket.rzFileName + '"', {
             cwd:
               process.cwd() +
               '/frontend/dist/file-cache/' +
-              ioSocket.netSocket.rzTargetDir,
+              ioSocket.netSocket.rzTargetDir
           });
 
           ioSocket.emit('rz-end', {
@@ -171,7 +173,7 @@ io.on('connection', function(ioSocket) {
               '/file-cache/' +
               ioSocket.netSocket.rzTargetDir +
               '/' +
-              ioSocket.netSocket.rzFileName,
+              ioSocket.netSocket.rzFileName
           });
         });
       }
@@ -183,16 +185,15 @@ io.on('connection', function(ioSocket) {
   });
 
   ioSocket.on('error', error => {
-    console.error('Client error:', error);
+    console.log('Client error:', error);
   });
 
   ioSocket.on('disconnect', () => {
-    console.error('Client disconnected:', ioSocket.client.conn.remoteAddress);
+    console.log('Client disconnected:', ioSocket.client.conn.remoteAddress);
     ioSocket.netSocket.destroy();
   });
 });
 
-console.error('Listening...');
+console.log('Listening...');
 
 httpServer.listen(8080, '0.0.0.0');
-
