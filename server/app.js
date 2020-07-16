@@ -128,19 +128,21 @@ io.on('connection', function(ioSocket) {
             }
           }
           {
-            const pattern = /Bytes received: ([0-9]*)\/([0-9]*).*BPS:([0-9]*)/;
-            const result = pattern.exec(decodedString);
+            const pattern = /Bytes received: ([0-9]*)\/([0-9]*).*BPS:([0-9]*)/gi;
 
-            if (result) {
-              const received = parseInt(result[1], 10);
-              const total = parseInt(result[2], 10);
-              const bps = parseInt(result[3], 10);
+            let result = null;
+            while (result = pattern.exec(decodedString)) {
+              if (result) {
+                const received = parseInt(result[1], 10);
+                const total = parseInt(result[2], 10);
+                const bps = parseInt(result[3], 10);
 
-              ioSocket.emit('rz-progress', {
-                received,
-                total,
-                bps
-              });
+                ioSocket.emit('rz-progress', {
+                  received,
+                  total,
+                  bps
+                });
+              }
             }
           }
         });

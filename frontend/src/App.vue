@@ -110,7 +110,7 @@
                 <v-progress-linear
                   color="light-green darken-4"
                   height="16"
-                  :value="((rzReceived / rzTotal) * 100).toFixed(0)"
+                  :value="parseInt(rzReceived / rzTotal * 100)"
                   striped
                 ></v-progress-linear>
               </div>
@@ -306,7 +306,7 @@ export default {
     rzDiag: false,
     rzFilename: null,
     rzReceived: 0,
-    rzTotal: 1,
+    rzTotal: 0,
     rzUrl: null,
 
     fileToUpload: null,
@@ -372,7 +372,7 @@ export default {
           this.rzFilename = filename;
           this.rzDiag = true;
           this.rzReceived = 0;
-          this.rzTotal = 1;
+          this.rzTotal = 0;
           this.$nextTick(() => {
             this.$refs.rzDiagText.innerText =
               '파일을 준비중입니다\n\n' + this.rzFilename;
@@ -1089,4 +1089,5 @@ export default {
   position: absolute;
   visibility: hidden;
 }
+
 </style>
