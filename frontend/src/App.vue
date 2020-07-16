@@ -343,7 +343,7 @@ export default {
   methods: {
     setupNetwork() {
       setTimeout(() => {
-        this.io = io('http://goblins.iptime.org:8080');
+        this.io = io('http://bbs.olddos.kr');
 
         this.io.on('connect', () => {
           this.connected = true;

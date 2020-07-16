@@ -15,10 +15,9 @@ app.use(express.static(process.cwd() + '/frontend/dist'));
 const httpServer = http.createServer(app);
 const io = require('socket.io')(httpServer);
 
-const BBS_ADDR = 'goblins.iptime.org';
+const BBS_ADDR = 'bbs.olddos.kr';
 const BBS_PORT = 9000;
-const WEB_ADDR = 'goblins.iptime.org';
-const WEB_PORT = 8080;
+const WEB_ADDR = 'bbs.olddos.kr';
 
 io.on('connection', function(ioSocket) {
   console.log('Client connected:', ioSocket.client.conn.remoteAddress);
@@ -110,7 +109,8 @@ io.on('connection', function(ioSocket) {
           cwd:
             process.cwd() +
             '/frontend/dist/file-cache/' +
-            ioSocket.netSocket.rzTargetDir
+            ioSocket.netSocket.rzTargetDir,
+          setsid: true
         });
 
         ioSocket.netSocket.rz.stdout.on('data', data => {
@@ -168,8 +168,6 @@ io.on('connection', function(ioSocket) {
             url:
               'http://' +
               WEB_ADDR +
-              ':' +
-              WEB_PORT +
               '/file-cache/' +
               ioSocket.netSocket.rzTargetDir +
               '/' +
