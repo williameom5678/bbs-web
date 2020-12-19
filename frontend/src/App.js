@@ -694,7 +694,7 @@ function App() {
   return (
     <div>
       <Navbar bg='primary' variant='dark'>
-        <img src='/icon.png' className='mr-2' width='24px' height='24px' />
+        <img src='/logo.png' className='mr-2' width='24px' height='24px' />
         <Navbar.Brand>
           <span style={{ color: 'yellow' }}>도</span>
           <span style={{ color: 'white' }}>/</span>
@@ -731,7 +731,7 @@ function App() {
           width='640'
           height='528'
           className='w-100'
-          style={{ maxWidth: '800px' }}
+          style={{ maxWidth: '720px' }}
           onClick={() => terminalClicked()}
           onMouseMove={(event) => mouseMove(event.clientX, event.clientY)}
         ></canvas>
