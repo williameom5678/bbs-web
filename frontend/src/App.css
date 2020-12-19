@@ -1,0 +1,61 @@
+@font-face {
+  font-family: 'neodgm';
+  src: url('./neodgm.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'neoiyg';
+  src: url('./neoiyg.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'neopil';
+  src: url('./neopil.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'neoancient';
+  src: url('./neoancient.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'neowater';
+  src: url('./neowater.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.command {
+  background-color: rgba(0, 0, 0, 0.0);
+  font-size: 16px;
+  height: 16px !important;
+  line-height: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  outline: none !important;
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #ffffff;
+}
+
+.smart-mouse-box {
+  margin: 0 !important;
+  padding: 0 !important;
+  border-top: 2px solid #ffffff !important;
+  border-left: 2px solid #ffffff !important;
+  border-right: 2px solid #aaaaaa !important;
+  border-bottom: 2px solid #aaaaaa !important;
+  outline: none !important;
+  position: absolute;
+  visibility: hidden;
+}
