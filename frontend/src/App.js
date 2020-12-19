@@ -355,7 +355,7 @@ function App() {
     {
       const pattern = /\[=([0-9]*)F/
       const result = pattern.exec(_escape)
-      if (result !== null) {
+      if (result) {
         const param1 = parseInt(result[1], 10)
         _attr.textColor = isNaN(param1) ? 15 : param1
       }
@@ -364,7 +364,7 @@ function App() {
     {
       const pattern = /\[=([0-9]*)G/
       const result = pattern.exec(_escape)
-      if (result !== null) {
+      if (result) {
         const param1 = parseInt(result[1], 10)
         _attr.backgroundColor = isNaN(param1) ? 1 : param1
       }
@@ -373,10 +373,10 @@ function App() {
     {
       const pattern = /\[([0-9]*)m/
       const result = pattern.exec(_escape)
-      if (result !== null) {
+      if (result) {
         const param1 = parseInt(result[1], 10)
         if (!isNaN(param1)) {
-          if (param1 === '7') {
+          if (param1 === 7) {
             _attr.reversed = true
           } else {
             _attr.reversed = false
@@ -390,7 +390,7 @@ function App() {
     {
       // Move _cursor to specific position
       {
-        const pattern = /\[([0-9]*)([0-9]*)H/
+        const pattern = /\[([0-9]*);([0-9]*)H/
         const result = pattern.exec(_escape)
         if (result) {
           const param1 = parseInt(result[1], 10)
@@ -496,7 +496,7 @@ function App() {
     }
     // Set the window area
     {
-      const pattern = /\[([0-9]*)([0-9]*)r/
+      const pattern = /\[([0-9]*);([0-9]*)r/
       const result = pattern.exec(_escape)
       if (result) {
         const param1 = parseInt(result[1], 10)
@@ -599,6 +599,7 @@ function App() {
 
   const write = (text) => {
     for (const ch of text) {
+      console.log(ch, (ch.charCodeAt(0)))
       _lastPageText += ch
       _lastPageTextPos.push({ x: _cursor.x, y: _cursor.y })
       if (_escape) {
@@ -705,7 +706,6 @@ function App() {
           <span style={{ color: 'lightgreen' }}>물</span>
           <span style={{ color: 'white' }}>/</span>
           <span style={{ color: 'yellow' }}>관</span>
-          {process.env.NODE_ENV}
         </Navbar.Brand>
         <Nav onSelect={(selectedKey) => fontSelected(selectedKey)}>
           <NavDropdown title='글꼴'>
@@ -725,13 +725,13 @@ function App() {
         </Nav>
         <Button onClick={() => copyToClipboard()}>갈무리</Button>
       </Navbar>
-      <div class='text-center mt-2'>
+      <div class='text-center mt-3'>
         <canvas
           ref={terminalRef}
           width='640'
           height='528'
           className='w-100'
-          style={{ maxWidth: '720px' }}
+          style={{ maxWidth: '640px' }}
           onClick={() => terminalClicked()}
           onMouseMove={(event) => mouseMove(event.clientX, event.clientY)}
         ></canvas>
