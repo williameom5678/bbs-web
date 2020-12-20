@@ -33,9 +33,6 @@ io.on('connection', function(ioSocket) {
   // Create client TCP socket
   ioSocket.netSocket = new net.Socket()
 
-  // True if the binary transmit mode
-  ioSocket.netSocket.binaryTransmit = false
-
   // Generate the decode stream
   ioSocket.netSocket.decodeStream = iconv.decodeStream('euc-kr')
   ioSocket.netSocket.decodeStream.on('data', data => {
@@ -66,62 +63,35 @@ io.on('connection', function(ioSocket) {
 
   // Data from the telnet server. Deliver it to the web client.
   ioSocket.netSocket.on('data', data => {
-    if (ioSocket.netSocket.binaryTransmit) {
-      const payload = []
+    ioSocket.netSocket.decodeStream.write(data)
 
-      data = [...remain, ...data]
-      remain = []
-
-      var index = 0
-      while (index < data.length) {
-        if (data[index] != 255) {
-          payload.push(data[index])
-          index++
-        } else {
-          if (index == data.length - 1) {
-            remain.push(255)
-            break
-          } else if (data[index + 1] == 255) {
-            payload.push(255)
-            index += 2
-          } else if (data[index + 1] >= 239 && data[index + 1] < 255) {
-            index += 3
-          } else {
-            index += 2
-          }
-        }
+    // Check rz
+    {
+      const pattern = /B00000000000000/
+      const result = pattern.exec(data.toString())
+      if (result) {
+        // Send it is not supported
+        ioSocket.emit('data', 'Web Client에서는 파일 다운로드를 지원하지 않습니다.')
+        // Send abort
+        const abortPacket = [
+          24, 24, 24, 24, 24, 24, 24, 24, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0
+        ]
+        ioSocket.netSocket.write(Buffer.from(abortPacket))
       }
-    } else {
-      ioSocket.netSocket.decodeStream.write(data)
+    }
 
-      // Check rz
-      {
-        const pattern = /B00000000000000/
-        const result = pattern.exec(data.toString())
-        if (result) {
-          // Send it is not supported
-          ioSocket.emit('data', 'Web Client에서는 파일 다운로드를 지원하지 않습니다.')
-          // Send abort
-          const abortPacket = [
-            24, 24, 24, 24, 24, 24, 24, 24, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0
-          ]
-          ioSocket.netSocket.write(Buffer.from(abortPacket))
-        }
-      }
-
-      // Check sz
-      {
-        const pattern = /B0100/
-        const result = pattern.exec(data.toString())
-        if (result) {
-          // Send it is not supported
-          ioSocket.emit('data', 'Web Client에서는 파일 업로드를 지원하지 않습니다.')
-          // Send abort
-          const abortPacket = [
-            24, 24, 24, 24, 24, 24, 24, 24, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0
-          ]
-          ioSocket.netSocket.write(Buffer.from(abortPacket))
-        }
+    // Check sz
+    {
+      const pattern = /B0100/
+      const result = pattern.exec(data.toString())
+      if (result) {
+        // Send it is not supported
+        ioSocket.emit('data', 'Web Client에서는 파일 업로드를 지원하지 않습니다.')
+        // Send abort
+        const abortPacket = [
+          24, 24, 24, 24, 24, 24, 24, 24, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0
+        ]
+        ioSocket.netSocket.write(Buffer.from(abortPacket))
       }
     }
   })
