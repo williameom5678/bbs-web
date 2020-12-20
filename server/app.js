@@ -7,6 +7,7 @@ const uuidv1 = require('uuid').v1
 const iconv = require('iconv-lite')
 const express = require('express')
 const app = express()
+const debug = require('debug')('bbs-web/server')
 
 require('console-stamp')(console, 'yyyy/mm/dd HH:MM:ss.l')
 
@@ -90,97 +91,27 @@ io.on('connection', function(ioSocket) {
           }
         }
       }
-
-      // At this line, ioSocket.netSocket.rz must be exist
-      ioSocket.netSocket.rz.stdin.write(Buffer.from(payload))
     } else {
       ioSocket.netSocket.decodeStream.write(data)
 
-      // Check rz session start
-      const pattern = /B00000000000000/
-      const result = pattern.exec(data.toString())
-      if (result) {
-        // Create temporary for file download using uuid
-        ioSocket.netSocket.rzTargetDir = uuidv1()
-        mkdir(
-          process.cwd() +
-            '/frontend/build/file-cache/' +
-            ioSocket.netSocket.rzTargetDir
-        )
+      // Check rz
+      {
+        const pattern = /B00000000000000/
+        const result = pattern.exec(data.toString())
+        if (result) {
+          // Send it is not supported
+          ioSocket.emit('data', 'Web Client에서는 파일 다운로드를 지원하지 않습니다.')
+        }
+      }
 
-        ioSocket.netSocket.binaryTransmit = true
-
-        ioSocket.netSocket.rz = spawn('rz', ['-e', '-E', '-vv'], {
-          cwd:
-            process.cwd() +
-            '/frontend/build/file-cache/' +
-            ioSocket.netSocket.rzTargetDir,
-          setsid: true
-        })
-
-        ioSocket.netSocket.rz.stdout.on('data', data => {
-          ioSocket.netSocket.write(data)
-        })
-
-        ioSocket.netSocket.rz.stderr.on('data', data => {
-          const decodedString = iconv.decode(Buffer.from(data), 'euc-kr')
-          {
-            const pattern = /Receiving: (.*)/
-            const result = pattern.exec(decodedString)
-            if (result) {
-              ioSocket.netSocket.rzFileName = result[1]
-              ioSocket.emit('rz-begin', ioSocket.netSocket.rzFileName)
-            }
-          }
-          {
-            const pattern = /Bytes received: ([0-9]*)\/([0-9]*).*BPS:([0-9]*)/gi
-
-            let result = null
-            while (result = pattern.exec(decodedString)) {
-              if (result) {
-                const received = parseInt(result[1], 10)
-                const total = parseInt(result[2], 10)
-                const bps = parseInt(result[3], 10)
-
-                ioSocket.emit('rz-progress', {
-                  received,
-                  total,
-                  bps
-                })
-              }
-            }
-          }
-        })
-
-        ioSocket.netSocket.rz.on('close', code => {
-          ioSocket.netSocket.binaryTransmit = false
-
-          // When close, KSC5601 file name is broken on the UTF-8 System.
-          // Should decode the file name to UTF-8
-          execSync('mv * ' + ioSocket.netSocket.rzTargetDir, {
-            cwd:
-              process.cwd() +
-              '/frontend/build/file-cache/' +
-              ioSocket.netSocket.rzTargetDir
-          })
-          execSync('mv * "' + ioSocket.netSocket.rzFileName + '"', {
-            cwd:
-              process.cwd() +
-              '/frontend/build/file-cache/' +
-              ioSocket.netSocket.rzTargetDir
-          })
-
-          ioSocket.emit('rz-end', {
-            code,
-            url:
-              'http://' +
-              WEB_ADDR +
-              '/file-cache/' +
-              ioSocket.netSocket.rzTargetDir +
-              '/' +
-              ioSocket.netSocket.rzFileName
-          })
-        })
+      // Check sz
+      {
+        const pattern = /B0100/
+        const result = pattern.exec(data.toString())
+        if (result) {
+          // Send it is not supported
+          ioSocket.emit('data', 'Web Client에서는 파일 업로드를 지원하지 않습니다.')
+        }
       }
     }
   })

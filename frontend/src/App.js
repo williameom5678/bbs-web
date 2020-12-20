@@ -52,15 +52,6 @@ function App() {
 
   const [applyDiag, setApplyDiag] = useState(false)
 
-  const [rzDiag, setRzDiag] = useState(false)
-  const [rzDiagText, setRzDiagText] = useState('')
-  const [rzProgress, setRzProgress] = useState('')
-  const [rzFilename, setRzFilename] = useState(null)
-  const [rzReceived, setRzReceived] = useState(0)
-  const [rzFinished, setRzFinished] = useState(false)
-  const [rzTotal, setRzTotal] = useState(1) // Set 1 as default value to prevent div with zero
-  const [rzUrl, setRzUrl] = useState(null)
-
   const terminalRef = useRef()
   const smartMouseBoxRef = useRef()
   const commandRef = useRef()
@@ -281,13 +272,6 @@ function App() {
     displayChanged(true)
   }
 
-  const rzClose = () => {
-    setRzDiag(false)
-    setRzFilename(false)
-    write('파일수신이 완료되었습니다. [ENTER]를 눌러주세요.')
-    terminalClicked()
-  }
-
   const onBeforeUnload = () => {
     _io.disconnect()
   }
@@ -323,36 +307,6 @@ function App() {
           setCommandType('text')
         }
         write(Buffer.from(data).toString())
-      })
-
-      _io.on('rz-begin', (filename) => {
-        debug(`rz-begin: ${filename}`)
-
-        setRzFilename(filename)
-        setRzDiag(true)
-        setRzFinished(false)
-        setRzReceived(0)
-        setRzTotal(0)
-        setRzDiagText(`파일 준비중: ${filename}`)
-      })
-
-      _io.on('rz-progress', (progress) => {
-        // Progress: { received, total, bps }
-        setRzReceived(progress.received)
-        setRzTotal(progress.total)
-        setRzProgress(`${progress.received} / ${progress.total}`)
-      })
-
-      _io.on('rz-end', result => {
-        if (result.code === 0) {
-          setRzReceived(rzTotal)
-          setRzFinished(true)
-
-          setRzDiagText(`파일 준비 완료: ${rzFilename}`)
-          setRzUrl(result.url)
-        } else {
-          alert('error: download failure!')
-        }
       })
     }, 4000)
   }
@@ -761,31 +715,6 @@ function App() {
       <div className='text-center mt-3'>
         <a href='mailto:gcjjyy@gmail.com'>© 2019 gcjjyy@gmail.com</a>
       </div>
-      <Modal show={rzDiag} size='xs' backdrop='static' centered>
-        <Modal.Header>
-          {rzDiagText}
-        </Modal.Header>
-        <Modal.Body className='text-center m-4'>
-          {rzProgress}
-          <ProgressBar
-            animated
-            now={parseInt(rzReceived / rzTotal * 100)}
-            label={`${parseInt(rzReceived / rzTotal * 100)}%`}
-          />
-        </Modal.Body>
-        {rzFinished &&
-          <div className='text-center m-3'>
-            <a href={rzUrl} download>
-              <Button className='w-50 mr-3'>
-                다운로드
-              </Button>
-            </a>
-            <Button onClick={() => rzClose()}>
-              닫기
-            </Button>
-          </div>
-        }
-      </Modal>
       <LoadingModal show={connDiag} message='접속 중입니다..'/>
       <LoadingModal show={applyDiag} message='적용 중입니다..'/>
     </div>
