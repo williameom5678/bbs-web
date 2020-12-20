@@ -600,7 +600,7 @@ function App() {
     const tmWidth = bcr.width
 
     const cmLeft = tmLeft + scaledCursorX
-    const cmTop = tmTop + scaledCursorY
+    const cmTop = tmTop + scaledCursorY - ((20 - (16 * _rate)) / 2)
     const cmWidth = tmWidth - (cmLeft - tmLeft)
 
     commandRef.current.style.left = `${cmLeft}px`
@@ -608,7 +608,7 @@ function App() {
     commandRef.current.style.width = `${cmWidth}px`
 
     commandRef.current.style.fontSize = `${16 * _rate}px`
-    commandRef.current.style.height = `${16 * _rate}px`
+    commandRef.current.style.height = '20px'
   }
 
   const write = (text) => {
