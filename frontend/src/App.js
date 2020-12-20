@@ -605,6 +605,7 @@ function App() {
     commandRef.current.style.width = `${cmWidth}px`
 
     commandRef.current.style.fontSize = `${16 * _rate}px`
+    commandRef.current.style.height = `${16 * _rate}px`
   }
 
   const write = (text) => {
@@ -757,6 +758,9 @@ function App() {
           onChange={(event) => setCommand(event.target.value)}
           onKeyUp={(event) => onKeyUp(event.key)}
         />
+      </div>
+      <div className='text-center mt-3'>
+        <a href='mailto:gcjjyy@gmail.com'>© 2019 gcjjyy@gmail.com</a>
       </div>
       <LoadingModal show={connDiag} message='접속 중입니다..'/>
       <LoadingModal show={applyDiag} message='적용 중입니다..'/>
