@@ -9,6 +9,9 @@ import THEMES from './themes'
 
 const debug = require('debug')('bbs-web')
 
+const CANVAS_WIDTH = 640
+const CANVAS_HEIGHT = 528
+
 const FONT_WIDTH = 8
 const FONT_HEIGHT = 16
 const SCREEN_HEIGHT = 33
@@ -177,7 +180,7 @@ function App() {
     const copy = _ctx2d.getImageData(
       0,
       FONT_HEIGHT * (WINDOW_TOP + 1),
-      terminalRef.current.clientWidth,
+      CANVAS_WIDTH,
       FONT_HEIGHT * (WINDOW_BOTTOM - WINDOW_TOP)
     )
     _ctx2d.putImageData(copy, 0, FONT_HEIGHT * WINDOW_TOP)
@@ -185,7 +188,7 @@ function App() {
     _ctx2d.fillRect(
       0,
       WINDOW_BOTTOM * FONT_HEIGHT,
-      terminalRef.current.clientWidth,
+      CANVAS_WIDTH,
       FONT_HEIGHT
     )
 
@@ -588,7 +591,7 @@ function App() {
   const moveCommandInputPosition = () => {
     const bcr = terminalRef.current.getBoundingClientRect()
 
-    _rate = bcr.width / 640
+    _rate = bcr.width / CANVAS_WIDTH
     const scaledCursorX = (_cursor.x * FONT_WIDTH) * _rate
     const scaledCursorY = (_cursor.y * FONT_HEIGHT) * _rate
 
@@ -738,10 +741,10 @@ function App() {
       <div class='text-center mt-3'>
         <canvas
           ref={terminalRef}
-          width='640'
-          height='528'
+          width={CANVAS_WIDTH}
+          height={CANVAS_HEIGHT}
           className='w-100'
-          style={{ maxWidth: '680px' }}
+          style={{ maxWidth: '700px' }}
           onClick={() => terminalClicked()}
           onMouseMove={(event) => mouseMove(event.clientX, event.clientY)}
         ></canvas>
