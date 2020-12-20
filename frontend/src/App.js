@@ -707,7 +707,7 @@ function App() {
 
   return (
     <div>
-      <Navbar bg='primary' variant='dark'>
+      <Navbar bg='primary' variant='dark' style={{ height: '3rem' }}>
         <img src='/logo.png' className='mr-2' width='24px' height='24px' />
         <Navbar.Brand>
           <span style={{ color: 'yellow' }}>도</span>
