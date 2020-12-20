@@ -587,19 +587,23 @@ function App() {
     const scaledCursorX = (_cursor.x * FONT_WIDTH) * _rate
     const scaledCursorY = (_cursor.y * FONT_HEIGHT) * _rate
 
-    commandRef.current.style.left =
-      `${bcr.left + window.pageXOffset + scaledCursorX}px`
+    const tmLeft = bcr.left + window.pageXOffset
+    const tmTop = bcr.top + window.pageYOffset
+    const tmWidth = bcr.width
 
-    commandRef.current.style.top =
-      `${bcr.top + window.pageYOffset + scaledCursorY}px`
+    const cmLeft = tmLeft + scaledCursorX
+    const cmTop = tmTop + scaledCursorY
+    const cmWidth = tmWidth - (cmLeft - tmLeft)
+
+    commandRef.current.style.left = `${cmLeft}px`
+    commandRef.current.style.top = `${cmTop}px`
+    commandRef.current.style.width = `${cmWidth}px`
 
     commandRef.current.style.fontSize = `${16 * _rate}px`
-    commandRef.current.style.right = `${bcr.right}px`
   }
 
   const write = (text) => {
     for (const ch of text) {
-      console.log(ch, (ch.charCodeAt(0)))
       _lastPageText += ch
       _lastPageTextPos.push({ x: _cursor.x, y: _cursor.y })
       if (_escape) {
