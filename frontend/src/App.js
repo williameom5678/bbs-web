@@ -257,6 +257,14 @@ function App() {
     _selectedDisplay = cookies.get('display') ?? 'VGA'
     _selectedFont = cookies.get('font') ?? 'neodgm'
 
+    // Value check for the prevent error by the previous value
+    if (!DISPLAYS.includes(_selectedDisplay)) {
+      _selectedDisplay = 'VGA'
+    }
+    if (!FONTS.includes(_selectedFont)) {
+      _selectedFont = 'neodgm'
+    }
+
     _ctx2d = terminalRef.current.getContext('2d')
     if (_ctx2d) {
       _ctx2d.fillStyle = COLOR[_attr.textColor]
