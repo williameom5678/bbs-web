@@ -588,10 +588,7 @@ function App() {
   const moveCommandInputPosition = () => {
     const bcr = terminalRef.current.getBoundingClientRect()
 
-    const rateX = bcr.width / 640
-    const rateY = bcr.height / 528
-    _rate = (rateX < rateY) ? rateX : rateY
-
+    _rate = bcr.width / 640
     const scaledCursorX = (_cursor.x * FONT_WIDTH) * _rate
     const scaledCursorY = (_cursor.y * FONT_HEIGHT) * _rate
 
@@ -743,7 +740,7 @@ function App() {
           width='640'
           height='528'
           className='w-100'
-          style={{ maxWidth: '640px' }}
+          style={{ maxWidth: '680px' }}
           onClick={() => terminalClicked()}
           onMouseMove={(event) => mouseMove(event.clientX, event.clientY)}
         ></canvas>
