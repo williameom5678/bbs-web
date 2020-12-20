@@ -101,6 +101,11 @@ io.on('connection', function(ioSocket) {
         if (result) {
           // Send it is not supported
           ioSocket.emit('data', 'Web Client에서는 파일 다운로드를 지원하지 않습니다.')
+          // Send abort
+          const abortPacket = [
+            24, 24, 24, 24, 24, 24, 24, 24, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0
+          ]
+          ioSocket.netSocket.write(Buffer.from(abortPacket))
         }
       }
 
@@ -111,6 +116,11 @@ io.on('connection', function(ioSocket) {
         if (result) {
           // Send it is not supported
           ioSocket.emit('data', 'Web Client에서는 파일 업로드를 지원하지 않습니다.')
+          // Send abort
+          const abortPacket = [
+            24, 24, 24, 24, 24, 24, 24, 24, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0
+          ]
+          ioSocket.netSocket.write(Buffer.from(abortPacket))
         }
       }
     }
