@@ -104,7 +104,7 @@ io.on('connection', function(ioSocket) {
         ioSocket.netSocket.rzTargetDir = uuidv1()
         mkdir(
           process.cwd() +
-            '/frontend/dist/file-cache/' +
+            '/frontend/build/file-cache/' +
             ioSocket.netSocket.rzTargetDir
         )
 
@@ -113,7 +113,7 @@ io.on('connection', function(ioSocket) {
         ioSocket.netSocket.rz = spawn('rz', ['-e', '-E', '-vv'], {
           cwd:
             process.cwd() +
-            '/frontend/dist/file-cache/' +
+            '/frontend/build/file-cache/' +
             ioSocket.netSocket.rzTargetDir,
           setsid: true
         })
@@ -160,13 +160,13 @@ io.on('connection', function(ioSocket) {
           execSync('mv * ' + ioSocket.netSocket.rzTargetDir, {
             cwd:
               process.cwd() +
-              '/frontend/dist/file-cache/' +
+              '/frontend/build/file-cache/' +
               ioSocket.netSocket.rzTargetDir
           })
           execSync('mv * "' + ioSocket.netSocket.rzFileName + '"', {
             cwd:
               process.cwd() +
-              '/frontend/dist/file-cache/' +
+              '/frontend/build/file-cache/' +
               ioSocket.netSocket.rzTargetDir
           })
 
