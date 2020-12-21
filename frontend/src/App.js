@@ -659,7 +659,7 @@ function App() {
     <div>
       <Navbar>
         <img src='/logo.png' className='mr-2' width='24px' height='24px' />
-        <Navbar.Brand>
+        <Navbar.Brand style={{ paddingBottom: '0.45rem' }}>
           <span style={{ fontSize: '1rem', color: 'yellow' }}>도</span>
           <span style={{ fontSize: '1rem', color: 'white' }}>/</span>
           <span style={{ fontSize: '1rem', color: 'red' }}>스</span>
