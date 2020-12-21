@@ -1,7 +1,7 @@
 import cookies from 'browser-cookies'
 import copy from 'copy-to-clipboard'
 import { useEffect, useRef, useState } from 'react'
-import { Button, Nav, Modal, ProgressBar, Navbar, NavDropdown } from 'react-bootstrap'
+import { Button, Nav, Navbar, NavDropdown } from 'react-bootstrap'
 import io from 'socket.io-client'
 import './App.scss'
 import LoadingModal from './LoadingModal'
@@ -660,15 +660,15 @@ function App() {
       <Navbar>
         <img src='/logo.png' className='mr-2' width='24px' height='24px' />
         <Navbar.Brand>
-          <span style={{ color: 'yellow' }}>도</span>
-          <span style={{ color: 'white' }}>/</span>
-          <span style={{ color: 'red' }}>스</span>
-          <span style={{ color: 'white' }}>/</span>
-          <span style={{ color: 'cyan' }}>박</span>
-          <span style={{ color: 'white' }}>/</span>
-          <span style={{ color: 'lightgreen' }}>물</span>
-          <span style={{ color: 'white' }}>/</span>
-          <span style={{ color: 'yellow' }}>관</span>
+          <span style={{ fontSize: '1rem', color: 'yellow' }}>도</span>
+          <span style={{ fontSize: '1rem', color: 'white' }}>/</span>
+          <span style={{ fontSize: '1rem', color: 'red' }}>스</span>
+          <span style={{ fontSize: '1rem', color: 'white' }}>/</span>
+          <span style={{ fontSize: '1rem', color: 'cyan' }}>박</span>
+          <span style={{ fontSize: '1rem', color: 'white' }}>/</span>
+          <span style={{ fontSize: '1rem', color: 'lightgreen' }}>물</span>
+          <span style={{ fontSize: '1rem', color: 'white' }}>/</span>
+          <span style={{ fontSize: '1rem', color: 'yellow' }}>관</span>
         </Navbar.Brand>
         <Nav onSelect={(selectedKey) => fontSelected(selectedKey)}>
           <NavDropdown title='글꼴'>
