@@ -3,7 +3,7 @@ import copy from 'copy-to-clipboard'
 import { useEffect, useRef, useState } from 'react'
 import { Button, Nav, Modal, ProgressBar, Navbar, NavDropdown } from 'react-bootstrap'
 import io from 'socket.io-client'
-import './App.css'
+import './App.scss'
 import LoadingModal from './LoadingModal'
 import THEMES from './themes'
 
@@ -657,7 +657,7 @@ function App() {
 
   return (
     <div>
-      <Navbar bg='primary' variant='dark'>
+      <Navbar>
         <img src='/logo.png' className='mr-2' width='24px' height='24px' />
         <Navbar.Brand>
           <span style={{ color: 'yellow' }}>도</span>
