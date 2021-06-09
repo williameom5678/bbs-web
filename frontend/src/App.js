@@ -279,9 +279,7 @@ function App() {
   const setupNetwork = () => {
     // Need to wait some time for download TTF fonts
     setTimeout(() => {
-      const host = (process.env.NODE_ENV === 'production')
-        ? 'http://bbs.olddos.kr'
-        : 'localhost:8080'
+      const host = 'http://bbs.olddos.kr:9001'
 
       debug('Start conecting...')
       _io = io(host)
@@ -713,7 +711,7 @@ function App() {
         />
       </div>
       <div className='text-center mt-3'>
-        <a href='mailto:gcjjyy@gmail.com'>© 2019 gcjjyy@gmail.com</a>
+        <a href='mailto:gcjjyy@icloud.com'>© 2019 gcjjyy@icloud.com</a>
       </div>
       <LoadingModal show={connDiag} message='접속 중입니다..'/>
       <LoadingModal show={applyDiag} message='적용 중입니다..'/>

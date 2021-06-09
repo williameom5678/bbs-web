@@ -22,7 +22,6 @@ const io = require('socket.io')(httpServer, {
 
 const BBS_ADDR = 'bbs.olddos.kr'
 const BBS_PORT = 9000
-const WEB_ADDR = 'bbs.olddos.kr'
 
 io.on('connection', function(ioSocket) {
   console.log('Client connected:', ioSocket.client.conn.remoteAddress)
