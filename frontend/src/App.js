@@ -1,12 +1,20 @@
 import cookies from 'browser-cookies'
 import copy from 'copy-to-clipboard'
 import { useEffect, useRef, useState } from 'react'
-import { Button, Nav, Navbar, NavDropdown } from 'react-bootstrap'
+import {
+  Button,
+  Nav,
+  Modal,
+  ProgressBar,
+  Navbar,
+  NavDropdown
+} from 'react-bootstrap'
 import io from 'socket.io-client'
 import './App.scss'
 import LoadingModal from './LoadingModal'
 import THEMES from './themes'
 
+const prettyBytes = require('pretty-bytes')
 const debug = require('debug')('bbs-web')
 
 const CANVAS_WIDTH = 640
@@ -51,6 +59,16 @@ function App() {
   const [commandType, setCommandType] = useState('text')
 
   const [applyDiag, setApplyDiag] = useState(false)
+
+  const [rzDiag, setRzDiag] = useState(false)
+  const [rzDiagText, setRzDiagText] = useState('')
+  const [rzProgress, setRzProgress] = useState('')
+  // const [rzFilename, setRzFilename] = useState('')
+  var rzFilename = ''
+  const [rzReceived, setRzReceived] = useState(0)
+  const [rzFinished, setRzFinished] = useState(false)
+  const [rzTotal, setRzTotal] = useState(1) // Set 1 as default value to prevent div with zero
+  const [rzUrl, setRzUrl] = useState(null)
 
   const terminalRef = useRef()
   const smartMouseBoxRef = useRef()
@@ -165,7 +183,7 @@ function App() {
   }
 
   const doubleWidth = (ch) => {
-    return (ch.charCodeAt(0) >= 0x80) && (_ctx2d.measureText(ch).width <= 9)
+    return ch.charCodeAt(0) >= 0x80 && _ctx2d.measureText(ch).width <= 9
   }
 
   const screenScrollUp = () => {
@@ -177,12 +195,7 @@ function App() {
     )
     _ctx2d.putImageData(copy, 0, FONT_HEIGHT * WINDOW_TOP)
     _ctx2d.fillStyle = COLOR[_attr.backgroundColor]
-    _ctx2d.fillRect(
-      0,
-      WINDOW_BOTTOM * FONT_HEIGHT,
-      CANVAS_WIDTH,
-      FONT_HEIGHT
-    )
+    _ctx2d.fillRect(0, WINDOW_BOTTOM * FONT_HEIGHT, CANVAS_WIDTH, FONT_HEIGHT)
 
     // Modify the position of _lastPageTextPos (scroll up)
     for (const pos of _lastPageTextPos) {
@@ -233,11 +246,10 @@ function App() {
 
       setTimeout(() => {
         // Clear whole webpage
-      document.getElementsByTagName('body')[0].style.backgroundColor =
+        document.getElementsByTagName('body')[0].style.backgroundColor =
           COLOR[_attr.backgroundColor]
 
-        terminalRef.current.style.backgroundColor =
-          COLOR[_attr.backgroundColor]
+        terminalRef.current.style.backgroundColor = COLOR[_attr.backgroundColor]
 
         // Rewrite last page text
         write(_lastPageText)
@@ -272,6 +284,16 @@ function App() {
     displayChanged(true)
   }
 
+  const rzClose = () => {
+    setRzDiag(false)
+    setRzFinished(false)
+    setRzReceived(0)
+    setRzTotal(0)
+    //setRzFilename('')
+    rzFilename = ''
+    terminalClicked()
+  }
+
   const onBeforeUnload = () => {
     _io.disconnect()
   }
@@ -279,7 +301,7 @@ function App() {
   const setupNetwork = () => {
     // Need to wait some time for download TTF fonts
     setTimeout(() => {
-      const host = 'http://bbs.olddos.kr:9001'
+      const host = 'http://localhost:8080'
 
       debug('Start conecting...')
       _io = io(host)
@@ -305,6 +327,35 @@ function App() {
           setCommandType('text')
         }
         write(Buffer.from(data).toString())
+      })
+
+      _io.on('rz-begin', (begin) => {
+        debug(`rz-begin: ${begin.filename}`)
+
+        // setRzFilename(begin.filename)
+        rzFilename = begin.filename
+        setRzDiag(true)
+        setRzFinished(false)
+        setRzReceived(0)
+        setRzTotal(0)
+        setRzDiagText(`파일 준비중: ${begin.filename}`)
+      })
+
+      _io.on('rz-progress', (progress) => {
+        setRzReceived(progress.received)
+        setRzTotal(progress.total)
+        setRzProgress(`${prettyBytes(progress.received)} / ${prettyBytes(progress.total)}`)
+      })
+
+      _io.on('rz-end', (result) => {
+        if (result.code === 0) {
+          setRzFinished(true)
+
+          setRzDiagText(`파일 준비 완료: ${rzFilename}`)
+          setRzUrl(result.url)
+        } else {
+          alert('error: download failure!')
+        }
       })
     }, 4000)
   }
@@ -525,8 +576,8 @@ function App() {
         const link = {
           command: result[1],
           px: {
-            x: (_lastPageTextPos[result.index].x * FONT_WIDTH) * _rate,
-            y: (_lastPageTextPos[result.index].y * FONT_HEIGHT) * _rate,
+            x: _lastPageTextPos[result.index].x * FONT_WIDTH * _rate,
+            y: _lastPageTextPos[result.index].y * FONT_HEIGHT * _rate,
             width: _ctx2d.measureText(normalText).width * _rate,
             height: FONT_HEIGHT * _rate
           }
@@ -540,15 +591,15 @@ function App() {
     const bcr = terminalRef.current.getBoundingClientRect()
 
     _rate = bcr.width / CANVAS_WIDTH
-    const scaledCursorX = (_cursor.x * FONT_WIDTH) * _rate
-    const scaledCursorY = (_cursor.y * FONT_HEIGHT) * _rate
+    const scaledCursorX = _cursor.x * FONT_WIDTH * _rate
+    const scaledCursorY = _cursor.y * FONT_HEIGHT * _rate
 
     const tmLeft = bcr.left + window.pageXOffset
     const tmTop = bcr.top + window.pageYOffset
     const tmWidth = bcr.width
 
     const cmLeft = tmLeft + scaledCursorX
-    const cmTop = tmTop + scaledCursorY - ((20 - (16 * _rate)) / 2)
+    const cmTop = tmTop + scaledCursorY - (20 - 16 * _rate) / 2
     const cmWidth = tmWidth - (cmLeft - tmLeft)
 
     commandRef.current.style.left = `${cmLeft}px`
@@ -647,16 +698,16 @@ function App() {
     window.addEventListener('resize', onResize)
     window.addEventListener('beforeunload', onBeforeUnload)
 
-    return (() => {
+    return () => {
       window.removeEventListener('resize', this.onResize)
       window.removeEventListener('beforeunload', this.onBeforeUnload)
-    })
+    }
   }, [])
 
   return (
     <div>
       <Navbar>
-        <img src='/logo.png' className='mr-2' width='24px' height='24px' />
+        <img src="/logo.png" className="mr-2" width="24px" height="24px" />
         <Navbar.Brand style={{ paddingBottom: '0.45rem' }}>
           <span style={{ fontSize: '1rem', color: 'yellow' }}>도</span>
           <span style={{ fontSize: '1rem', color: 'white' }}>/</span>
@@ -669,52 +720,73 @@ function App() {
           <span style={{ fontSize: '1rem', color: 'yellow' }}>관</span>
         </Navbar.Brand>
         <Nav onSelect={(selectedKey) => fontSelected(selectedKey)}>
-          <NavDropdown title='글꼴'>
+          <NavDropdown title="글꼴">
             {FONTS.map((font) => (
-              <NavDropdown.Item key={font.value} eventKey={font.value}>{font.name}</NavDropdown.Item>
+              <NavDropdown.Item key={font.value} eventKey={font.value}>
+                {font.name}
+              </NavDropdown.Item>
             ))}
           </NavDropdown>
         </Nav>
-        <Nav
-          onSelect={(selectedKey) => displaySelected(selectedKey)}
-        >
-          <NavDropdown title='색상'>
+        <Nav onSelect={(selectedKey) => displaySelected(selectedKey)}>
+          <NavDropdown title="색상">
             {DISPLAYS.map((display) => (
-              <NavDropdown.Item key={display} eventKey={display}>{display}</NavDropdown.Item>
+              <NavDropdown.Item key={display} eventKey={display}>
+                {display}
+              </NavDropdown.Item>
             ))}
           </NavDropdown>
         </Nav>
         <Button onClick={() => copyToClipboard()}>갈무리</Button>
       </Navbar>
-      <div className='text-center mt-3'>
+      <div className="text-center mt-3">
         <canvas
           ref={terminalRef}
           width={CANVAS_WIDTH}
           height={CANVAS_HEIGHT}
-          className='w-100'
+          className="w-100"
           style={{ maxWidth: '700px' }}
           onClick={() => terminalClicked()}
           onMouseMove={(event) => mouseMove(event.clientX, event.clientY)}
         ></canvas>
         <div
           ref={smartMouseBoxRef}
-          className='smart-mouse-box'
+          className="smart-mouse-box"
           onClick={() => smartMouseClicked()}
         ></div>
         <input
           ref={commandRef}
           type={commandType}
-          className='command'
+          className="command"
           value={command}
           onChange={(event) => setCommand(event.target.value)}
           onKeyUp={(event) => onKeyUp(event.key)}
         />
       </div>
-      <div className='text-center mt-3'>
-        <a href='mailto:gcjjyy@icloud.com'>© 2019 gcjjyy@icloud.com</a>
+      <div className="text-center mt-3">
+        <a href="mailto:gcjjyy@icloud.com">© 2019 gcjjyy@icloud.com</a>
       </div>
-      <LoadingModal show={connDiag} message='접속 중입니다..'/>
-      <LoadingModal show={applyDiag} message='적용 중입니다..'/>
+      <Modal show={rzDiag} size="xs" backdrop="static" centered>
+        <Modal.Header>{rzDiagText}</Modal.Header>
+        <Modal.Body className="text-center m-4">
+          {rzProgress}
+          <ProgressBar
+            animated
+            now={parseInt((rzReceived / rzTotal) * 100)}
+            label={`${parseInt((rzReceived / rzTotal) * 100)}%`}
+          />
+        </Modal.Body>
+        {rzFinished && (
+          <div className="text-center m-3">
+            <a href={rzUrl} download>
+              <Button className="w-50 mr-3">다운로드</Button>
+            </a>
+            <Button onClick={() => rzClose()}>닫기</Button>
+          </div>
+        )}
+      </Modal>
+      <LoadingModal show={connDiag} message="접속 중입니다.." />
+      <LoadingModal show={applyDiag} message="적용 중입니다.." />
     </div>
   )
 }
