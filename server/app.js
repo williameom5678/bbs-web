@@ -38,6 +38,7 @@ io.on('connection', function(ioSocket) {
     ioSocket.emit('data', Buffer.from(data))
   })
 
+  try {
   // Connect to the BBS server (BBS_ADDR:BBS_PORT)
   ioSocket.netSocket.connect(BBS_PORT, BBS_ADDR, () => {
     console.log('BBS connected:', ioSocket.client.conn.remoteAddress)
@@ -53,6 +54,9 @@ io.on('connection', function(ioSocket) {
     // When connected, send the init packet (pre-defined)
     ioSocket.netSocket.write(Buffer.from(initPacket))
   })
+  } catch {
+    console.log('Connection failed..')
+  }
 
   // Deliver the bbs server close event to the ioSocket
   ioSocket.netSocket.on('close', () => {
