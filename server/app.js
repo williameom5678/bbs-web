@@ -1,15 +1,16 @@
 const net = require('net')
-const mkdir = require('mkdirp-sync')
 const http = require('http')
-const spawn = require('child_process').spawn
-const execSync = require('child_process').execSync
-const uuidv1 = require('uuid').v1
 const iconv = require('iconv-lite')
 const express = require('express')
-const app = express()
-const debug = require('debug')('bbs-web/server')
-
+const { TelnetSocket } = require('telnet-stream')
 require('console-stamp')(console, 'yyyy/mm/dd HH:MM:ss.l')
+
+const ECHO = 1
+const TERMINAL_TYPE = 24
+const WINDOW_SIZE = 31
+const WILL_OPTIONS = [ECHO, TERMINAL_TYPE, WINDOW_SIZE]
+
+const app = express()
 
 app.use(express.static(process.cwd() + '/frontend/build'))
 
@@ -29,49 +30,43 @@ io.on('connection', function(ioSocket) {
   // Remain data to be parsed
   var remain = []
 
-  // Create client TCP socket
-  ioSocket.netSocket = new net.Socket()
+  // Create client TCP Socket
+  ioSocket.netSocket = net.createConnection(9000, 'bbs.olddos.kr')
+
+  // Create Telnet Procotol Stream
+  ioSocket.tSocket = new TelnetSocket(ioSocket.netSocket)
 
   // Generate the decode stream
-  ioSocket.netSocket.decodeStream = iconv.decodeStream('euc-kr')
-  ioSocket.netSocket.decodeStream.on('data', data => {
+  ioSocket.tSocket.decodeStream = iconv.decodeStream('euc-kr')
+  ioSocket.tSocket.decodeStream.on('data', data => {
     ioSocket.emit('data', Buffer.from(data))
   })
 
-  try {
-  // Connect to the BBS server (BBS_ADDR:BBS_PORT)
-  ioSocket.netSocket.connect(BBS_PORT, BBS_ADDR, () => {
-    console.log('BBS connected:', ioSocket.client.conn.remoteAddress)
-    // prettier-ignore
-    const initPacket =
-        [
-          255, 251,  24, 255, 252,  32, 255, 252,
-           35, 255, 252,  39, 255, 250,  24,  86,
-           84,  49,  48,  48, 255, 240, 255, 251,
-            1, 255, 251,  31, 255, 252,   3
-        ]
-
-    // When connected, send the init packet (pre-defined)
-    ioSocket.netSocket.write(Buffer.from(initPacket))
+  ioSocket.tSocket.on('do', (option) => {
+    if (WILL_OPTIONS.includes(option)) {
+      ioSocket.tSocket.writeWill(option)
+  
+      if (option == TERMINAL_TYPE) {
+        ioSocket.tSocket.writeSub(TERMINAL_TYPE, Buffer.from('VT100'))
+      }
+    } else {
+      ioSocket.tSocket.writeWont(option)
+    }
   })
-  } catch {
-    console.log('Connection failed..')
-  }
 
-  // Deliver the bbs server close event to the ioSocket
-  ioSocket.netSocket.on('close', () => {
+  ioSocket.tSocket.on('close', () => {
     console.log('BBS disconnected:', ioSocket.client.conn.remoteAddress)
     ioSocket.disconnect(true)
   })
 
-  // Data from the telnet server. Deliver it to the web client.
-  ioSocket.netSocket.on('data', data => {
-    ioSocket.netSocket.decodeStream.write(data)
+  // Handling data from the telnet stream
+  ioSocket.tSocket.on('data', (buffer) => {
+    ioSocket.tSocket.decodeStream.write(buffer)
 
     // Check rz
     {
       const pattern = /B00000000000000/
-      const result = pattern.exec(data.toString())
+      const result = pattern.exec(buffer.toString())
       if (result) {
         // Send it is not supported
         ioSocket.emit('data', 'Web Client에서는 파일 다운로드를 지원하지 않습니다.')
@@ -86,7 +81,7 @@ io.on('connection', function(ioSocket) {
     // Check sz
     {
       const pattern = /B0100/
-      const result = pattern.exec(data.toString())
+      const result = pattern.exec(buffer.toString())
       if (result) {
         // Send it is not supported
         ioSocket.emit('data', 'Web Client에서는 파일 업로드를 지원하지 않습니다.')
@@ -97,10 +92,10 @@ io.on('connection', function(ioSocket) {
         ioSocket.netSocket.write(Buffer.from(abortPacket))
       }
     }
-  })
+  });
 
   ioSocket.on('data', data => {
-    ioSocket.netSocket.write(iconv.encode(Buffer.from(data), 'euc-kr'))
+    ioSocket.tSocket.write(iconv.encode(Buffer.from(data), 'euc-kr'))
   })
 
   ioSocket.on('error', error => {
