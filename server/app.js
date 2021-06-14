@@ -5,6 +5,7 @@ const spawn = require('child_process').spawn
 const uuidv1 = require('uuid').v1
 const iconv = require('iconv-lite')
 const express = require('express')
+const execSync = require('child_process').execSync
 
 const { TelnetSocket } = require('telnet-stream')
 require('console-stamp')(console, 'yyyy/mm/dd HH:MM:ss.l')
@@ -27,7 +28,7 @@ const io = require('socket.io')(httpServer, {
 
 const BBS_ADDR = 'bbs.olddos.kr'
 const BBS_PORT = 9000
-const WEB_ADDR = 'localhost:8080'
+const WEB_ADDR = 'bbs.olddos.kr:9001'
 
 io.on('connection', function (ioSocket) {
   console.log('Client connected:', ioSocket.client.conn.remoteAddress)
@@ -97,7 +98,6 @@ io.on('connection', function (ioSocket) {
           })
 
           ioSocket.rz.stderr.on('data', (data) => {
-            console.error(iconv.decode(Buffer.from(data), 'euc-kr'))
             const decodedString = iconv.decode(Buffer.from(data), 'euc-kr')
             {
               const pattern = /Receiving: (.*)/
@@ -126,7 +126,12 @@ io.on('connection', function (ioSocket) {
 
           ioSocket.rz.on('close', (code) => {
             ioSocket.binaryTransmit = false
-            console.log('END code:', code)
+            execSync('find', ['.', '-type f', '-exec mv -f {} ' + ioSocket.rzFileName + ' 2> /dev/null \;'], {
+              cwd:
+                process.cwd() +
+                '/frontend/build/file-cache/' +
+                ioSocket.rzTargetDir
+            })
             ioSocket.emit('rz-end', {
               code,
               url:

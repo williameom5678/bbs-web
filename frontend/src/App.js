@@ -301,7 +301,7 @@ function App() {
   const setupNetwork = () => {
     // Need to wait some time for download TTF fonts
     setTimeout(() => {
-      const host = 'http://localhost:8080'
+      const host = 'http://bbs.olddos.kr:9001'
 
       debug('Start conecting...')
       _io = io(host)
