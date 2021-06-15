@@ -778,7 +778,7 @@ function App() {
         </Modal.Body>
         {rzFinished && (
           <div className="text-center m-3">
-            <a href={rzUrl} download type="application/octet-stream">
+            <a href={rzUrl} download>
               <Button className="w-50 mr-3">다운로드</Button>
             </a>
             <Button onClick={() => rzClose()}>닫기</Button>

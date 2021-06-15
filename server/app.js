@@ -135,8 +135,6 @@ io.on('connection', function (ioSocket) {
             ioSocket.emit('rz-end', {
               code,
               url:
-                'http://' +
-                WEB_ADDR +
                 '/file-cache/' +
                 ioSocket.rzTargetDir +
                 '/' +
