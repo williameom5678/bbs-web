@@ -109,7 +109,7 @@ io.on('connection', function (ioSocket) {
             }
             {
               const pattern =
-                /Bytes received: ([0-9 ]*)\/([0-9]*).*BPS:([0-9]*)/gi
+                /Bytes received: ([0-9 ]*)\/([0-9 ]*).*BPS:([0-9 ]*)/gi
 
               let result = null
               while ((result = pattern.exec(decodedString))) {
@@ -126,7 +126,7 @@ io.on('connection', function (ioSocket) {
 
           ioSocket.rz.on('close', (code) => {
             ioSocket.binaryTransmit = false
-            execSync('find', ['.', '-type f', '-exec mv -f {} ' + ioSocket.rzFileName + ' 2> /dev/null \;'], {
+            execSync('find . -type f -exec mv -f {} "' + ioSocket.rzFileName + '" 2> /dev/null \\;', {
               cwd:
                 process.cwd() +
                 '/frontend/build/file-cache/' +
