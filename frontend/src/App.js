@@ -68,15 +68,20 @@ function App() {
   const [rzProgress, setRzProgress] = useState('')
   // const [rzFilename, setRzFilename] = useState('')
   var rzFilename = ''
-  const [rzReceived, setRzReceived] = useState(0)
+  const [rzProgressNow, setRzProgressNow] = useState(0)
+  const [rzProgressLabel, setRzProgressLabel] = useState('')
   const [rzFinished, setRzFinished] = useState(false)
-  const [rzTotal, setRzTotal] = useState(1) // Set 1 as default value to prevent div with zero
   const [rzUrl, setRzUrl] = useState(null)
 
   // Upload
+  var szFilename = ''
   const [szPreparing, setSzPreparing] = useState(false)
   const [szDiag, setSzDiag] = useState(false)
   const [szDiagText, setSzDiagText] = useState('')
+  const [szProgress, setSzProgress] = useState('')
+  const [szProgressNow, setSzProgressNow] = useState(0)
+  const [szProgressLabel, setSzProgressLabel] = useState('')
+  const [szFinished, setSzFinished] = useState(false)
 
   // Notification
   const [notiDiag, setNotiDiag] = useState(false)
@@ -89,7 +94,7 @@ function App() {
 
   const fileToUploadRef = createRef()
 
-  const showNotificaiton = (title, text) => {
+  const showNotification = (title, text) => {
     setNotiDiagTitle(title)
     setNotiDiagText(text)
     setNotiDiag(true)
@@ -137,9 +142,9 @@ function App() {
     normalText = normalText.replace(/\x0d\x00/gi, '')
 
     if (copy(normalText)) {
-      showNotificaiton('갈무리', '현재 화면이 클립보드에 복사되었습니다.')
+      showNotification('갈무리', '현재 화면이 클립보드에 복사되었습니다.')
     } else {
-      showNotificaiton('갈무리', '클립보드에 복사 중 오류가 발생하였습니다.')
+      showNotification('갈무리', '클립보드에 복사 중 오류가 발생하였습니다.')
     }
   }
 
@@ -303,7 +308,7 @@ function App() {
       _ctx2d.font = 'normal 16px ' + _selectedFont
       _ctx2d.textBaseline = 'top'
     } else {
-      showNotificaiton('초기화 오류', 'Canvas Context2D를 생성할 수 없습니다.')
+      showNotification('초기화 오류', 'Canvas Context2D를 생성할 수 없습니다.')
     }
 
     displayChanged(true)
@@ -316,26 +321,57 @@ function App() {
   const uploadFile = (file) => {
     const isAscii = /^[\x00-\x7F]*$/.test(file.name)
     if (!isAscii) {
-      showNotificaiton('파일명 오류', '현재는 영문(ASCII)으로만 된 파일명만 지원합니다.')
+      showNotification(
+        '파일명 오류',
+        '현재는 영문(ASCII)으로만 된 파일명만 지원합니다.'
+      )
     } else {
       const formData = new FormData()
       formData.append('fileToUpload', file)
+
+      setSzPreparing(true)
+
       Axios.post('upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
+      }).then((res) => {
+        if (res.data.result) {
+          _io.emit('sz-ready', {
+            szFileReady: res.data.szFileReady,
+            szTargetDir: res.data.szTargetDir,
+            szFilenameUTF8: res.data.szFilenameUTF8,
+            szFilename: res.data.szFilename
+          })
+          showNotification(
+            `업로드 파일 준비: ${res.data.szFilenameUTF8}`,
+            '업로드할 파일이 준비되었습니다. Zmodem으로 업로드 해주세요.'
+          )
+        } else {
+          showNotification('업로드 파일 준비', '업로드 파일 준비 실패')
+        }
+        setSzPreparing(false)
       })
-      setSzPreparing(true)
     }
   }
 
   const rzClose = () => {
     setRzDiag(false)
     setRzFinished(false)
-    setRzReceived(0)
-    setRzTotal(0)
+    setRzProgressNow(0)
+    setRzProgressLabel('')
     //setRzFilename('')
     rzFilename = ''
+    terminalClicked()
+  }
+
+  const szClose = () => {
+    setSzDiag(false)
+    setSzFinished(false)
+    setSzProgressNow(0)
+    setSzProgressLabel('')
+    //setSzFilename('')
+    szFilename = ''
     terminalClicked()
   }
 
@@ -384,14 +420,16 @@ function App() {
         rzFilename = begin.filename
         setRzDiag(true)
         setRzFinished(false)
-        setRzReceived(0)
-        setRzTotal(0)
+        setRzProgressNow(0)
+        setRzProgressLabel('')
         setRzDiagText(`파일 준비중: ${begin.filename}`)
       })
 
       _io.on('rz-progress', (progress) => {
-        setRzReceived(progress.received)
-        setRzTotal(progress.total)
+        setRzProgressNow(parseInt((progress.received / progress.total) * 100))
+        setRzProgressLabel(
+          `${parseInt((progress.received / progress.total) * 100)}%`
+        )
         setRzProgress(
           `${prettyBytes(progress.received)} / ${prettyBytes(progress.total)}`
         )
@@ -400,21 +438,47 @@ function App() {
       _io.on('rz-end', (result) => {
         if (result.code === 0) {
           setRzFinished(true)
+          setRzProgressNow(100)
+          setRzProgressLabel('100%')
 
           setRzDiagText(`파일 준비 완료: ${rzFilename}`)
           setRzUrl(result.url)
         } else {
-          showNotificaiton('오류', '다운로드 실패')
+          showNotification('오류', '다운로드 실패')
         }
       })
 
-      _io.on('file-received', (result) => {
-        if (result) {
-          showNotificaiton('업로드 파일 준비', '업로드할 파일이 준비되었습니다.\nZmodem으로 업로드 해주세요.')
+      _io.on('sz-begin', (begin) => {
+        debug(`sz-begin: ${begin.filename}`)
+
+        // setRzFilename(begin.filename)
+        szFilename = begin.filename
+        setSzDiag(true)
+        setSzFinished(false)
+        setSzProgressNow(0)
+        setSzProgressLabel('')
+        setSzDiagText(`파일 업로드 중: ${begin.filename}`)
+      })
+
+      _io.on('sz-progress', (progress) => {
+        setSzProgressNow(parseInt((progress.sent / progress.total) * 100))
+        setSzProgressLabel(
+          `${parseInt((progress.sent / progress.total) * 100)}%`
+        )
+        setSzProgress(
+          `${prettyBytes(progress.sent)} / ${prettyBytes(progress.total)}`
+        )
+      })
+
+      _io.on('sz-end', (result) => {
+        if (result.code === 0) {
+          setSzFinished(true)
+          setSzProgressNow(100)
+          setSzProgressLabel('100%')
+          setSzDiagText(`파일 업로드 완료: ${szFilename}`)
         } else {
-          showNotificaiton('업로드 파일 준비', '업로드 파일 준비 실패')
+          showNotification('오류', '업로드 실패')
         }
-        setSzPreparing(false)
       })
     }, 4000)
   }
@@ -798,9 +862,18 @@ function App() {
         </Nav>
         <Button onClick={() => copyToClipboard()}>갈무리</Button>
         {szPreparing ? (
-          <Spinner style={{ marginLeft: '0.25rem' }} animation="border" />
+          <Spinner
+            style={{ marginLeft: '0.25rem' }}
+            size="sm"
+            animation="border"
+          />
         ) : (
-          <Button style={{ marginLeft: '0.25rem' }} onClick={() => prepareUpload()}>📤</Button>
+          <Button
+            style={{ marginLeft: '0.25rem' }}
+            onClick={() => prepareUpload()}
+          >
+            📤
+          </Button>
         )}
       </Navbar>
       <div className="text-center mt-3">
@@ -836,11 +909,7 @@ function App() {
         <Modal.Header>{rzDiagText}</Modal.Header>
         <Modal.Body className="text-center m-4">
           {rzProgress}
-          <ProgressBar
-            animated
-            now={parseInt((rzReceived / rzTotal) * 100)}
-            label={`${parseInt((rzReceived / rzTotal) * 100)}%`}
-          />
+          <ProgressBar animated now={rzProgressNow} label={rzProgressLabel} />
         </Modal.Body>
         {rzFinished && (
           <div className="text-center m-3">
@@ -852,18 +921,30 @@ function App() {
         )}
       </Modal>
 
+      {/* Modal for Upload */}
+      <Modal show={szDiag} size="xs" backdrop="static" centered>
+        <Modal.Header>{szDiagText}</Modal.Header>
+        <Modal.Body className="text-center m-4">
+          {szProgress}
+          <ProgressBar animated now={szProgressNow} label={szProgressLabel} />
+        </Modal.Body>
+        {szFinished && (
+          <div className="text-center m-3">
+            <Button onClick={() => szClose()}>확인</Button>
+          </div>
+        )}
+      </Modal>
+
       {/* Modal Notification */}
       <Modal show={notiDiag} size="xs" backdrop="static" centered>
         <Modal.Header>{notiDiagTitle}</Modal.Header>
-        <Modal.Body className="text-center m-4">
-          {notiDiagText}
-        </Modal.Body>
+        <Modal.Body className="text-center m-4">{notiDiagText}</Modal.Body>
         <div className="text-center m-3">
           <Button onClick={() => notiDiagClose()}>확인</Button>
         </div>
       </Modal>
 
-      {/* Hidden input for prepare upload 📦 */}
+      {/* Hidden input for prepare upload */}
       <input
         type="file"
         name="fileToUpload"

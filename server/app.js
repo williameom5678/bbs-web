@@ -208,6 +208,14 @@ io.on('connection', function (ioSocket) {
     ioSocket.tSocket.write(iconv.encode(Buffer.from(data), 'euc-kr'))
   })
 
+  ioSocket.on('sz-ready', (data) => {
+    console.log('sz-ready:', data)
+    ioSocket.szFileReady = data.szFileReady
+    ioSocket.szTargetDir = data.szTargetDir
+    ioSocket.szFilenameUTF8 = data.szFilenameUTF8
+    ioSocket.szFilename = data.szFilename
+  })
+
   ioSocket.on('error', (error) => {
     console.log('Client error:', error)
   })
@@ -224,14 +232,14 @@ io.on('connection', function (ioSocket) {
 
     console.log('Received a file to upload:', receivedFile)
 
-    ioSocket.szFileReady = true
-    ioSocket.szTargetDir = uuidv1()
+    const szFileReady = true
+    const szTargetDir = uuidv1()
 
     // The szFilename is euc-kr
-    ioSocket.szFilenameUTF8 = receivedFile.name
-    ioSocket.szFilename = iconv.encode(receivedFile.name, 'euc-kr')
+    const szFilenameUTF8 = receivedFile.name
+    const szFilename = iconv.encode(receivedFile.name, 'euc-kr').toString('ascii')
 
-    const dir = fileCacheDir + ioSocket.szTargetDir
+    const dir = fileCacheDir + szTargetDir
     mkdir(dir)
 
     // Save file to the directory
@@ -247,8 +255,14 @@ io.on('connection', function (ioSocket) {
       cwd: dir
     })
 
-    ioSocket.emit('file-received', result)
-  });
+    res.send({
+      result,
+      szFileReady,
+      szTargetDir,
+      szFilenameUTF8,
+      szFilename
+    })
+  })
 })
 
 console.log('Listening...')
