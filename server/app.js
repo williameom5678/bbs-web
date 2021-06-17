@@ -242,7 +242,7 @@ io.on('connection', function (ioSocket) {
     })
 
     // Rename the filename to euc-kr from utf8
-    execSync('find . -type f -exec mv -f {} "' + ioSocket.szFilename + '" 2> /dev/null \\;', {
+    execSync('convmv --notest -f utf8 -t euckr * 2> /dev/null \\;', {
       cwd: dir
     })
 
