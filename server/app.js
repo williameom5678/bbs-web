@@ -159,7 +159,6 @@ io.on('connection', function (ioSocket) {
 
             ioSocket.sz.stderr.on('data', (data) => {
               const decodedString = iconv.decode(Buffer.from(data), 'euc-kr')
-              console.log('szLog:', decodedString)
               {
                 const pattern = /Sending: (.*)/
                 const result = pattern.exec(decodedString)
@@ -223,6 +222,8 @@ io.on('connection', function (ioSocket) {
     var result = true
     const receivedFile = req.files.fileToUpload
 
+    console.log('Received a file to upload:', receivedFile)
+
     ioSocket.szFileReady = true
     ioSocket.szTargetDir = uuidv1()
 
@@ -242,7 +243,7 @@ io.on('connection', function (ioSocket) {
     })
 
     // Rename the filename to euc-kr from utf8
-    execSync('convmv --notest -f utf8 -t euckr * 2> /dev/null \\;', {
+    execSync('convmv --notest -f utf8 -t euckr * 2> /dev/null', {
       cwd: dir
     })
 

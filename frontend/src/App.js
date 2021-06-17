@@ -314,14 +314,19 @@ function App() {
   }
 
   const uploadFile = (file) => {
-    const formData = new FormData()
-    formData.append('fileToUpload', file)
-    Axios.post('upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
-    setSzPreparing(true)
+    const isAscii = /^[\x00-\x7F]*$/.test(file.name)
+    if (!isAscii) {
+      showNotificaiton('파일명 오류', '현재는 영문(ASCII)으로만 된 파일명만 지원합니다.')
+    } else {
+      const formData = new FormData()
+      formData.append('fileToUpload', file)
+      Axios.post('upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      setSzPreparing(true)
+    }
   }
 
   const rzClose = () => {
