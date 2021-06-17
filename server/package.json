@@ -2,6 +2,7 @@
   "dependencies": {
     "console-stamp": "^0.2.9",
     "express": "^4.17.1",
+    "express-fileupload": "^1.2.1",
     "iconv-lite": "^0.6.2",
     "mkdirp-sync": "^0.0.3",
     "socket.io": "^3.0.4",

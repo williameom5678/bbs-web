@@ -1,10 +1,12 @@
 import cookies from 'browser-cookies'
 import copy from 'copy-to-clipboard'
+import { createRef } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import {
   Button,
   Nav,
   Modal,
+  Spinner,
   ProgressBar,
   Navbar,
   NavDropdown
@@ -13,6 +15,7 @@ import io from 'socket.io-client'
 import './App.scss'
 import LoadingModal from './LoadingModal'
 import THEMES from './themes'
+import Axios from 'axios'
 
 const prettyBytes = require('pretty-bytes')
 const debug = require('debug')('bbs-web')
@@ -70,9 +73,31 @@ function App() {
   const [rzTotal, setRzTotal] = useState(1) // Set 1 as default value to prevent div with zero
   const [rzUrl, setRzUrl] = useState(null)
 
+  // Upload
+  const [szPreparing, setSzPreparing] = useState(false)
+  const [szDiag, setSzDiag] = useState(false)
+  const [szDiagText, setSzDiagText] = useState('')
+
+  // Notification
+  const [notiDiag, setNotiDiag] = useState(false)
+  const [notiDiagTitle, setNotiDiagTitle] = useState('')
+  const [notiDiagText, setNotiDiagText] = useState('')
+
   const terminalRef = useRef()
   const smartMouseBoxRef = useRef()
   const commandRef = useRef()
+
+  const fileToUploadRef = createRef()
+
+  const showNotificaiton = (title, text) => {
+    setNotiDiagTitle(title)
+    setNotiDiagText(text)
+    setNotiDiag(true)
+  }
+
+  const notiDiagClose = () => {
+    setNotiDiag(false)
+  }
 
   const fontSelected = (font) => {
     _selectedFont = font
@@ -112,9 +137,9 @@ function App() {
     normalText = normalText.replace(/\x0d\x00/gi, '')
 
     if (copy(normalText)) {
-      alert('현재 화면이 클립보드에 복사되었습니다.')
+      showNotificaiton('갈무리', '현재 화면이 클립보드에 복사되었습니다.')
     } else {
-      alert('클립보드에 복사 중 오류가 발생하였습니다.')
+      showNotificaiton('갈무리', '클립보드에 복사 중 오류가 발생하였습니다.')
     }
   }
 
@@ -278,10 +303,25 @@ function App() {
       _ctx2d.font = 'normal 16px ' + _selectedFont
       _ctx2d.textBaseline = 'top'
     } else {
-      alert('error: cannot create a canvas context2d!')
+      showNotificaiton('초기화 오류', 'Canvas Context2D를 생성할 수 없습니다.')
     }
 
     displayChanged(true)
+  }
+
+  const prepareUpload = () => {
+    fileToUploadRef.current.click()
+  }
+
+  const uploadFile = (file) => {
+    const formData = new FormData()
+    formData.append('fileToUpload', file)
+    Axios.post('upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    setSzPreparing(true)
   }
 
   const rzClose = () => {
@@ -301,7 +341,8 @@ function App() {
   const setupNetwork = () => {
     // Need to wait some time for download TTF fonts
     setTimeout(() => {
-      const host = 'http://bbs.olddos.kr:9001'
+      // The expressjs host server is running at the same url with the URL
+      const host = window.location.href
 
       debug('Start conecting...')
       _io = io(host)
@@ -319,12 +360,14 @@ function App() {
 
       _io.on('data', (data) => {
         // Check if the password input phrase
-        const pattern = /비밀번호 : /
-        const result = pattern.exec(Buffer.from(data).toString())
-        if (result) {
-          setCommandType('password')
-        } else {
-          setCommandType('text')
+        {
+          const pattern = /비밀번호 : /
+          const result = pattern.exec(Buffer.from(data).toString())
+          if (result) {
+            setCommandType('password')
+          } else {
+            setCommandType('text')
+          }
         }
         write(Buffer.from(data).toString())
       })
@@ -344,7 +387,9 @@ function App() {
       _io.on('rz-progress', (progress) => {
         setRzReceived(progress.received)
         setRzTotal(progress.total)
-        setRzProgress(`${prettyBytes(progress.received)} / ${prettyBytes(progress.total)}`)
+        setRzProgress(
+          `${prettyBytes(progress.received)} / ${prettyBytes(progress.total)}`
+        )
       })
 
       _io.on('rz-end', (result) => {
@@ -354,8 +399,17 @@ function App() {
           setRzDiagText(`파일 준비 완료: ${rzFilename}`)
           setRzUrl(result.url)
         } else {
-          alert('error: download failure!')
+          showNotificaiton('오류', '다운로드 실패')
         }
+      })
+
+      _io.on('file-received', (result) => {
+        if (result) {
+          showNotificaiton('업로드 파일 준비', '업로드할 파일이 준비되었습니다.\nZmodem으로 업로드 해주세요.')
+        } else {
+          showNotificaiton('업로드 파일 준비', '업로드 파일 준비 실패')
+        }
+        setSzPreparing(false)
       })
     }, 4000)
   }
@@ -738,6 +792,11 @@ function App() {
           </NavDropdown>
         </Nav>
         <Button onClick={() => copyToClipboard()}>갈무리</Button>
+        {szPreparing ? (
+          <Spinner style={{ marginLeft: '0.25rem' }} animation="border" />
+        ) : (
+          <Button style={{ marginLeft: '0.25rem' }} onClick={() => prepareUpload()}>📤</Button>
+        )}
       </Navbar>
       <div className="text-center mt-3">
         <canvas
@@ -766,6 +825,8 @@ function App() {
       <div className="text-center mt-3">
         <a href="mailto:gcjjyy@icloud.com">© 2019 gcjjyy@icloud.com</a>
       </div>
+
+      {/* Modal for Download */}
       <Modal show={rzDiag} size="xs" backdrop="static" centered>
         <Modal.Header>{rzDiagText}</Modal.Header>
         <Modal.Body className="text-center m-4">
@@ -785,6 +846,33 @@ function App() {
           </div>
         )}
       </Modal>
+
+      {/* Modal Notification */}
+      <Modal show={notiDiag} size="xs" backdrop="static" centered>
+        <Modal.Header>{notiDiagTitle}</Modal.Header>
+        <Modal.Body className="text-center m-4">
+          {notiDiagText}
+        </Modal.Body>
+        <div className="text-center m-3">
+          <Button onClick={() => notiDiagClose()}>확인</Button>
+        </div>
+      </Modal>
+
+      {/* Hidden input for prepare upload 📦 */}
+      <input
+        type="file"
+        name="fileToUpload"
+        ref={fileToUploadRef}
+        hidden
+        onChange={(e) => {
+          if (e.target.files.length) {
+            uploadFile(e.target.files[0])
+          }
+        }}
+      />
+
+      {/* Modal for Upload */}
+
       <LoadingModal show={connDiag} message="접속 중입니다.." />
       <LoadingModal show={applyDiag} message="적용 중입니다.." />
     </div>

@@ -6,6 +6,7 @@ const uuidv1 = require('uuid').v1
 const iconv = require('iconv-lite')
 const express = require('express')
 const execSync = require('child_process').execSync
+const fileUpload = require('express-fileupload')
 
 const { TelnetSocket } = require('telnet-stream')
 require('console-stamp')(console, 'yyyy/mm/dd HH:MM:ss.l')
@@ -17,6 +18,7 @@ const WILL_OPTIONS = [ECHO, TERMINAL_TYPE, WINDOW_SIZE]
 
 const app = express()
 
+app.use(fileUpload())
 app.use(express.static(process.cwd() + '/frontend/build'))
 
 const httpServer = http.createServer(app)
@@ -29,6 +31,8 @@ const io = require('socket.io')(httpServer, {
 const BBS_ADDR = 'bbs.olddos.kr'
 const BBS_PORT = 9000
 const WEB_ADDR = 'bbs.olddos.kr:9001'
+
+const fileCacheDir = process.cwd() + '/frontend/build/file-cache/'
 
 io.on('connection', function (ioSocket) {
   console.log('Client connected:', ioSocket.client.conn.remoteAddress)
@@ -67,8 +71,10 @@ io.on('connection', function (ioSocket) {
 
   // Handling data from the telnet stream
   ioSocket.tSocket.on('data', (buffer) => {
-    if (ioSocket.binaryTransmit) {
+    if (ioSocket.rzTransmit) {
       ioSocket.rz.stdin.write(Buffer.from(buffer))
+    } else if (ioSocket.szTransmit) {
+      ioSocket.sz.stdin.write(Buffer.from(buffer))
     } else {
       ioSocket.tSocket.decodeStream.write(buffer)
 
@@ -79,17 +85,12 @@ io.on('connection', function (ioSocket) {
         if (result) {
           // Create temporary for file download using uuid
           ioSocket.rzTargetDir = uuidv1()
-          mkdir(
-            process.cwd() + '/frontend/build/file-cache/' + ioSocket.rzTargetDir
-          )
+          mkdir(fileCacheDir + ioSocket.rzTargetDir)
 
-          ioSocket.binaryTransmit = true
+          ioSocket.rzTransmit = true
 
           ioSocket.rz = spawn('rz', ['-e', '-E', '-vv'], {
-            cwd:
-              process.cwd() +
-              '/frontend/build/file-cache/' +
-              ioSocket.rzTargetDir,
+            cwd: fileCacheDir + ioSocket.rzTargetDir,
             setsid: true
           })
 
@@ -103,8 +104,8 @@ io.on('connection', function (ioSocket) {
               const pattern = /Receiving: (.*)/
               const result = pattern.exec(decodedString)
               if (result) {
-                ioSocket.rzFileName = result[1]
-                ioSocket.emit('rz-begin', { filename: ioSocket.rzFileName })
+                ioSocket.rzFilename = result[1]
+                ioSocket.emit('rz-begin', { filename: ioSocket.rzFilename })
               }
             }
             {
@@ -125,20 +126,15 @@ io.on('connection', function (ioSocket) {
           })
 
           ioSocket.rz.on('close', (code) => {
-            ioSocket.binaryTransmit = false
-            execSync('find . -type f -exec mv -f {} "' + ioSocket.rzFileName + '" 2> /dev/null \\;', {
+            ioSocket.rzTransmit = false
+            execSync('find . -type f -exec mv -f {} "' + ioSocket.rzFilename + '" 2> /dev/null \\;', {
               cwd:
-                process.cwd() +
-                '/frontend/build/file-cache/' +
+              fileCacheDir +
                 ioSocket.rzTargetDir
             })
             ioSocket.emit('rz-end', {
               code,
-              url:
-                '/file-cache/' +
-                ioSocket.rzTargetDir +
-                '/' +
-                ioSocket.rzFileName
+              url: '/file-cache/' + ioSocket.rzTargetDir + '/' + ioSocket.rzFilename
             })
           })
         }
@@ -149,16 +145,61 @@ io.on('connection', function (ioSocket) {
         const pattern = /B0100/
         const result = pattern.exec(buffer.toString())
         if (result) {
-          // Send it is not supported
-          ioSocket.emit(
-            'data',
-            'Web Client에서는 파일 업로드를 지원하지 않습니다.'
-          )
-          // Send abort
-          const abortPacket = [
-            24, 24, 24, 24, 24, 24, 24, 24, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0
-          ]
-          ioSocket.netSocket.write(Buffer.from(abortPacket))
+          if (ioSocket.szFileReady) {
+            ioSocket.szTransmit = true
+
+            ioSocket.sz = spawn('sz', [ioSocket.szFilename, '-e', '-E', '-vv'], {
+              cwd: fileCacheDir + ioSocket.szTargetDir,
+              setsid: true
+            })
+
+            ioSocket.sz.stdout.on('data', (data) => {
+              ioSocket.tSocket.write(data)
+            })
+
+            ioSocket.sz.stderr.on('data', (data) => {
+              const decodedString = iconv.decode(Buffer.from(data), 'euc-kr')
+              console.log('szLog:', decodedString)
+              {
+                const pattern = /Sending: (.*)/
+                const result = pattern.exec(decodedString)
+                if (result) {
+                  ioSocket.emit('sz-begin', { filename: ioSocket.szFilenameUTF8 })
+                }
+              }
+              {
+                const pattern =
+                  /Bytes sent: ([0-9 ]*)\/([0-9 ]*).*BPS:([0-9 ]*)/gi
+
+                let result = null
+                while ((result = pattern.exec(decodedString))) {
+                  if (result) {
+                    const sent = parseInt(result[1], 10)
+                    const total = parseInt(result[2], 10)
+                    const bps = parseInt(result[3], 10)
+
+                    ioSocket.emit('sz-progress', { sent, total, bps })
+                  }
+                }
+              }
+            })
+
+            ioSocket.sz.on('close', (code) => {
+              ioSocket.szTransmit = false
+              ioSocket.emit('sz-end', { code })
+            })
+          } else {
+            // Send it is not supported
+            ioSocket.emit(
+              'data',
+              '업로드할 파일이 준비되지 않았습니다.'
+            )
+            // Send abort
+            const abortPacket = [
+              24, 24, 24, 24, 24, 24, 24, 24, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0
+            ]
+            ioSocket.netSocket.write(Buffer.from(abortPacket))
+          }
         }
       }
     }
@@ -176,6 +217,37 @@ io.on('connection', function (ioSocket) {
     console.log('Client disconnected:', ioSocket.client.conn.remoteAddress)
     ioSocket.netSocket.destroy()
   })
+
+  // File upload
+  app.post('/upload', function(req, res) {
+    var result = true
+    const receivedFile = req.files.fileToUpload
+
+    ioSocket.szFileReady = true
+    ioSocket.szTargetDir = uuidv1()
+
+    // The szFilename is euc-kr
+    ioSocket.szFilenameUTF8 = receivedFile.name
+    ioSocket.szFilename = iconv.encode(receivedFile.name, 'euc-kr')
+
+    const dir = fileCacheDir + ioSocket.szTargetDir
+    mkdir(dir)
+
+    // Save file to the directory
+    receivedFile.mv(dir + `/${receivedFile.name}`, (err) => {
+      if (err) {
+        console.error('File mv error:', err)
+        result = false
+      }
+    })
+
+    // Rename the filename to euc-kr from utf8
+    execSync('find . -type f -exec mv -f {} "' + ioSocket.szFilename + '" 2> /dev/null \\;', {
+      cwd: dir
+    })
+
+    ioSocket.emit('file-received', result)
+  });
 })
 
 console.log('Listening...')
