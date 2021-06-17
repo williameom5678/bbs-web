@@ -68,6 +68,7 @@ function App() {
   const [rzProgress, setRzProgress] = useState('')
   // const [rzFilename, setRzFilename] = useState('')
   var rzFilename = ''
+  var rzTotal = 0
   const [rzProgressNow, setRzProgressNow] = useState(0)
   const [rzProgressLabel, setRzProgressLabel] = useState('')
   const [rzFinished, setRzFinished] = useState(false)
@@ -75,6 +76,7 @@ function App() {
 
   // Upload
   var szFilename = ''
+  var szTotal = 0
   const [szPreparing, setSzPreparing] = useState(false)
   const [szDiag, setSzDiag] = useState(false)
   const [szDiagText, setSzDiagText] = useState('')
@@ -362,6 +364,7 @@ function App() {
     setRzProgressLabel('')
     //setRzFilename('')
     rzFilename = ''
+    rzTotal = 0
     terminalClicked()
   }
 
@@ -372,6 +375,7 @@ function App() {
     setSzProgressLabel('')
     //setSzFilename('')
     szFilename = ''
+    szTotal = 0
     terminalClicked()
   }
 
@@ -426,6 +430,7 @@ function App() {
       })
 
       _io.on('rz-progress', (progress) => {
+        rzTotal = progress.total
         setRzProgressNow(parseInt((progress.received / progress.total) * 100))
         setRzProgressLabel(
           `${parseInt((progress.received / progress.total) * 100)}%`
@@ -440,7 +445,9 @@ function App() {
           setRzFinished(true)
           setRzProgressNow(100)
           setRzProgressLabel('100%')
-
+          setRzProgress(
+            `${prettyBytes(rzTotal)} / ${prettyBytes(rzTotal)}`
+          )
           setRzDiagText(`파일 준비 완료: ${rzFilename}`)
           setRzUrl(result.url)
         } else {
@@ -461,6 +468,7 @@ function App() {
       })
 
       _io.on('sz-progress', (progress) => {
+        szTotal = progress.total
         setSzProgressNow(parseInt((progress.sent / progress.total) * 100))
         setSzProgressLabel(
           `${parseInt((progress.sent / progress.total) * 100)}%`
@@ -475,6 +483,9 @@ function App() {
           setSzFinished(true)
           setSzProgressNow(100)
           setSzProgressLabel('100%')
+          setSzProgress(
+            `${prettyBytes(szTotal)} / ${prettyBytes(szTotal)}`
+          )
           setSzDiagText(`파일 업로드 완료: ${szFilename}`)
         } else {
           showNotification('오류', '업로드 실패')
