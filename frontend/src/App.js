@@ -860,7 +860,10 @@ function App() {
             ))}
           </NavDropdown>
         </Nav>
-        <Nav onSelect={(selectedKey) => displaySelected(selectedKey)}>
+        <Nav
+          className="mr-auto"
+          onSelect={(selectedKey) => displaySelected(selectedKey)}
+        >
           <NavDropdown title="🎨">
             {DISPLAYS.map((display) => (
               <NavDropdown.Item key={display} eventKey={display}>
