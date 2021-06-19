@@ -9,7 +9,9 @@ import {
   Spinner,
   ProgressBar,
   Navbar,
-  NavDropdown
+  NavDropdown,
+  OverlayTrigger,
+  Tooltip
 } from 'react-bootstrap'
 import io from 'socket.io-client'
 import './App.scss'
@@ -445,9 +447,7 @@ function App() {
           setRzFinished(true)
           setRzProgressNow(100)
           setRzProgressLabel('100%')
-          setRzProgress(
-            `${prettyBytes(rzTotal)} / ${prettyBytes(rzTotal)}`
-          )
+          setRzProgress(`${prettyBytes(rzTotal)} / ${prettyBytes(rzTotal)}`)
           setRzDiagText(`파일 준비 완료: ${rzFilename}`)
           setRzUrl(result.url)
         } else {
@@ -483,9 +483,7 @@ function App() {
           setSzFinished(true)
           setSzProgressNow(100)
           setSzProgressLabel('100%')
-          setSzProgress(
-            `${prettyBytes(szTotal)} / ${prettyBytes(szTotal)}`
-          )
+          setSzProgress(`${prettyBytes(szTotal)} / ${prettyBytes(szTotal)}`)
           setSzDiagText(`파일 업로드 완료: ${szFilename}`)
         } else {
           showNotification('오류', '업로드 실패')
@@ -854,7 +852,7 @@ function App() {
           <span style={{ fontSize: '1rem', color: 'yellow' }}>관</span>
         </Navbar.Brand>
         <Nav onSelect={(selectedKey) => fontSelected(selectedKey)}>
-          <NavDropdown title="글꼴">
+          <NavDropdown title="🅰">
             {FONTS.map((font) => (
               <NavDropdown.Item key={font.value} eventKey={font.value}>
                 {font.name}
@@ -863,7 +861,7 @@ function App() {
           </NavDropdown>
         </Nav>
         <Nav onSelect={(selectedKey) => displaySelected(selectedKey)}>
-          <NavDropdown title="색상">
+          <NavDropdown title="🎨">
             {DISPLAYS.map((display) => (
               <NavDropdown.Item key={display} eventKey={display}>
                 {display}
@@ -871,20 +869,38 @@ function App() {
             ))}
           </NavDropdown>
         </Nav>
-        <Button onClick={() => copyToClipboard()}>갈무리</Button>
-        {szPreparing ? (
-          <Spinner
-            style={{ marginLeft: '0.25rem' }}
-            size="sm"
-            animation="border"
-          />
-        ) : (
-          <Button
-            style={{ marginLeft: '0.25rem' }}
-            onClick={() => prepareUpload()}
-          >
-            📤
+        <OverlayTrigger
+          placement="bottom"
+          overlay={<Tooltip>현재 화면의 텍스트를 갈무리합니다.</Tooltip>}
+        >
+          <Button variant="info" onClick={() => copyToClipboard()}>
+            📋
           </Button>
+        </OverlayTrigger>
+        {szPreparing ? (
+          <OverlayTrigger
+            placement="bottom"
+            overlay={<Tooltip>파일 준비 중...</Tooltip>}
+          >
+            <Spinner
+              style={{ marginLeft: '0.35rem' }}
+              size="sm"
+              animation="border"
+            />
+          </OverlayTrigger>
+        ) : (
+          <OverlayTrigger
+            placement="bottom"
+            overlay={<Tooltip>업로드 할 파일을 미리 준비합니다.</Tooltip>}
+          >
+            <Button
+              variant="info"
+              style={{ marginLeft: '0.35rem' }}
+              onClick={() => prepareUpload()}
+            >
+              💾
+            </Button>
+          </OverlayTrigger>
         )}
       </Navbar>
       <div className="text-center mt-3">
