@@ -548,6 +548,10 @@ function App() {
                 break
               case 47: _attr.backgroundColor = 15
                 break
+              default: _attr.reversed = false
+                _attr.textColor = 15
+                _attr.backgroundColor = 1
+                break
             }
           }
         }
