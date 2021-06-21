@@ -124,28 +124,7 @@ function App() {
   }
 
   const copyToClipboard = () => {
-    let normalText = ''
-    let esc = false
-
-    for (const ch of _lastPageText) {
-      if (!esc && ch === '\x1b') {
-        esc = true
-        continue
-      }
-
-      if (esc && '@ABCDFGHJKSfhlmprsu'.indexOf(ch) !== -1) {
-        esc = false
-        continue
-      }
-
-      if (!esc) {
-        normalText += ch
-      }
-    }
-
-    normalText = normalText.replace(/\x0d\x00/gi, '')
-
-    if (copy(normalText)) {
+    if (copy(_lastPageText)) {
       showNotification('갈무리', '현재 화면이 클립보드에 복사되었습니다.')
     } else {
       showNotification('갈무리', '클립보드에 복사 중 오류가 발생하였습니다.')
@@ -513,18 +492,64 @@ function App() {
     }
     // Reverse color
     {
-      const pattern = /\[([0-9]*)m/
+      const pattern = /\[([0-9;]*)m/
       const result = pattern.exec(_escape)
       if (result) {
-        const param1 = parseInt(result[1], 10)
-        if (!isNaN(param1)) {
-          if (param1 === 7) {
-            _attr.reversed = true
-          } else {
+        const attrs = result[1].split(';')
+        for (const attr of attrs) {
+          if (!attr || parseInt(attr, 10) == 0) {
+            // Reset All Attributes
             _attr.reversed = false
+            _attr.textColor = 15
+            _attr.backgroundColor = 1
+          } else {
+            switch (parseInt(attr, 10)) {
+              case 1: // Not supported
+                break
+              case 2: // Not supported
+                break
+              case 4: // Not supported
+                break
+              case 5: // Not supported
+                break
+              case 7: _attr.reversed = true
+                break
+              case 8: // Not supported
+                break
+              case 30: _attr.textColor = 0
+                break
+              case 31: _attr.textColor = 4
+                break
+              case 32: _attr.textColor = 2
+                break
+              case 33: _attr.textColor = 14
+                break
+              case 34: _attr.textColor = 1
+                break
+              case 35: _attr.textColor = 5
+                break
+              case 36: _attr.textColor = 3
+                break
+              case 37: _attr.textColor = 15
+                break
+              case 40: _attr.backgroundColor = 0
+                break
+              case 41: _attr.backgroundColor = 4
+                break
+              case 42: _attr.backgroundColor = 2
+                break
+              case 43: _attr.backgroundColor = 14
+                break
+              case 44: _attr.backgroundColor = 1
+                break
+              case 45: _attr.backgroundColor = 5
+                break
+              case 46: _attr.backgroundColor = 3
+                break
+              case 47: _attr.backgroundColor = 15
+                break
+            }
           }
-        } else {
-          _attr.reversed = false
         }
       }
     }
@@ -569,21 +594,29 @@ function App() {
         const result = pattern.exec(_escape)
         if (result) {
           const param1 = parseInt(result[1], 10)
-          _cursor.x = isNaN(param1) ? 0 : param1 - 1
+          _cursor.x += isNaN(param1) ? 0 : param1 - 1
         }
       }
       // Store and restore the _cursor position
       {
-        if (_escape === '[s') {
-          _cursorStore = { x: _cursor.x, y: _cursor.y }
-        } else if (_escape === '[u') {
-          _cursor = { x: _cursorStore.x, y: _cursorStore.y }
+        if (_escape.endsWith('[s')) {
+          _cursorStore = {
+            x: _cursor.x,
+            y: _cursor.y,
+            textColor: _attr.textColor,
+            backgroundColor: _attr.backgroundColor
+          }
+        } else if (_escape.endsWith('[u')) {
+          _cursor.x = _cursorStore.x + 1
+          _cursor.y = _cursorStore.y
+          _attr.textColor = _cursorStore.textColor
+          _attr.backgroundColor = _cursorStore.backgroundColor
         }
       }
     }
     // Clear the screen
     {
-      if (_escape === '\x1b[2J') {
+      if (_escape.endsWith('[2J')) {
         _ctx2d.fillStyle = COLOR[_attr.backgroundColor]
         _ctx2d.fillRect(
           0,

@@ -28,9 +28,10 @@ const io = require('socket.io')(httpServer, {
   }
 })
 
+// const BBS_ADDR = 'bbs.thelast.co.kr'
+// const BBS_PORT = 23
 const BBS_ADDR = 'bbs.olddos.kr'
 const BBS_PORT = 9000
-const WEB_ADDR = 'bbs.olddos.kr:9001'
 
 const fileCacheDir = process.cwd() + '/frontend/build/file-cache/'
 
@@ -41,7 +42,7 @@ io.on('connection', function (ioSocket) {
   var remain = []
 
   // Create client TCP Socket
-  ioSocket.netSocket = net.createConnection(9000, 'bbs.olddos.kr')
+  ioSocket.netSocket = net.createConnection(BBS_PORT, BBS_ADDR)
 
   // Create Telnet Procotol Stream
   ioSocket.tSocket = new TelnetSocket(ioSocket.netSocket)
