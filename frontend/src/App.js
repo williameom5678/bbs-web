@@ -889,15 +889,13 @@ function App() {
       <Navbar>
         <img src="/logo.png" className="mr-2" width="24px" height="24px" />
         <Navbar.Brand style={{ paddingBottom: '0.45rem' }}>
-          <span style={{ fontSize: '1rem', color: 'yellow' }}>도</span>
+          <span style={{ fontSize: '1rem', color: 'yellow' }}>바</span>
           <span style={{ fontSize: '1rem', color: 'white' }}>/</span>
-          <span style={{ fontSize: '1rem', color: 'red' }}>스</span>
+          <span style={{ fontSize: '1rem', color: 'red' }}>다</span>
           <span style={{ fontSize: '1rem', color: 'white' }}>/</span>
-          <span style={{ fontSize: '1rem', color: 'cyan' }}>박</span>
+          <span style={{ fontSize: '1rem', color: 'cyan' }}>멜</span>
           <span style={{ fontSize: '1rem', color: 'white' }}>/</span>
-          <span style={{ fontSize: '1rem', color: 'lightgreen' }}>물</span>
-          <span style={{ fontSize: '1rem', color: 'white' }}>/</span>
-          <span style={{ fontSize: '1rem', color: 'yellow' }}>관</span>
+          <span style={{ fontSize: '1rem', color: 'lightgreen' }}>롱</span>
         </Navbar.Brand>
         <Nav onSelect={(selectedKey) => fontSelected(selectedKey)}>
           <NavDropdown title="🅰">

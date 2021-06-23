@@ -28,10 +28,8 @@ const io = require('socket.io')(httpServer, {
   }
 })
 
-// const BBS_ADDR = 'bbs.thelast.co.kr'
-// const BBS_PORT = 23
-const BBS_ADDR = 'bbs.olddos.kr'
-const BBS_PORT = 9000
+const BBS_ADDR = 'badamelong.iptime.org'
+const BBS_PORT = 1000
 
 const fileCacheDir = process.cwd() + '/frontend/build/file-cache/'
 
@@ -268,4 +266,4 @@ io.on('connection', function (ioSocket) {
 
 console.log('Listening...')
 
-httpServer.listen(8080, '0.0.0.0')
+httpServer.listen(9090, '0.0.0.0')
